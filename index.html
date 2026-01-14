@@ -17,7 +17,7 @@
     <div class="topbar-inner">
       <div class="title">
         <h1>Sales, Stock and Profit Dashboard</h1>
-        <p>Auto loads MakitaExport.csv. Filter, search, and explore sales, revenue and profit for this year and last year.</p>
+        <p>Auto loads MakitaExport.csv. Filter, search, and explore sales, revenue, profit, and stock value.</p>
       </div>
 
       <div class="controls">
@@ -30,17 +30,16 @@
 
         <select id="brand"><option value="">Brand (All)</option></select>
         <select id="parent"><option value="">Parent Category (All)</option></select>
-        <select id="status"><option value="">Best Seller Status (All)</option></select>
+        <select id="classification"><option value="">Classification (All)</option></select>
 
         <select id="sort">
-          <option value="gpEffDesc" selected>Default sort: Gross profit (effective price basis) desc</option>
-          <option value="revEffDesc">Default sort: Revenue (units × effective price) desc</option>
-          <option value="revSellDesc">Default sort: Revenue (units × selling price) desc</option>
-          <option value="gpSellDesc">Default sort: Profit (selling price basis) desc</option>
+          <option value="profitDesc" selected>Default sort: Profit this year desc</option>
+          <option value="revenueDesc">Default sort: Revenue this year desc</option>
           <option value="unitsThisYearDesc">Default sort: Units this year desc</option>
           <option value="unitsLastYearDesc">Default sort: Units last year desc</option>
           <option value="profitPctDesc">Default sort: Profit % desc</option>
           <option value="discountDesc">Default sort: Discount % desc</option>
+          <option value="stockValueDesc">Default sort: Stock value desc</option>
         </select>
 
         <button id="reset" class="btn" type="button">Reset</button>
@@ -52,19 +51,19 @@
     <section class="kpis">
       <div class="kpi">
         <div class="kpi-top">
-          <div class="kpi-value" id="kpiProducts">–</div>
+          <div class="kpi-value" id="kpiProducts">-</div>
           <div class="kpi-label">Products</div>
         </div>
-        <div class="kpi-sub" id="kpiStatusSummary"></div>
+        <div class="kpi-sub" id="kpiClassificationSummary"></div>
       </div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">–</div><div class="kpi-label">Units This Year</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">–</div><div class="kpi-label">Units Last Year</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units This Year</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units Last Year</div></div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiRevenueEffective">–</div><div class="kpi-label">Revenue (units × effective price, ex VAT)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiProfitEffective">–</div><div class="kpi-label">Gross profit (effective price basis)</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiRevenue">-</div><div class="kpi-label">Revenue this year (units × selling price, ex VAT)</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit this year (selling price basis)</div></div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiRevenueSelling">–</div><div class="kpi-label">Revenue (units × selling price, ex VAT)</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiStockValue">-</div><div class="kpi-label">Stock value</div></div>
     </section>
 
     <section class="grid">
@@ -74,21 +73,22 @@
       </div>
 
       <div class="card">
-        <h2>Revenue and Gross Profit This Year by Brand (Top 12, effective price basis)</h2>
-        <div class="chart" id="brandRevProfitEffective"></div>
+        <h2>Revenue and Profit This Year by Brand (Top 12)</h2>
+        <p class="subtle">Revenue uses Units This Year × Selling Price ex VAT. Profit uses (Selling Price ex VAT − Cost Price ex VAT) × Units This Year.</p>
+        <div class="chart" id="brandRevProfit"></div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Revenue and Profit This Year by Brand (Top 12, selling price basis)</h2>
-        <p class="subtle">Revenue uses Units This Year × Selling Price ex VAT. Profit uses (Selling Price ex VAT − Cost Price ex VAT) × Units This Year.</p>
-        <div class="chart" id="brandRevProfitSelling"></div>
+        <h2>Parent Category Revenue Share (This Year)</h2>
+        <div class="chart" id="parentRevenueShare"></div>
       </div>
 
       <div class="card">
-        <h2>Parent Category Revenue Share (This Year, effective price basis)</h2>
-        <div class="chart" id="parentRevenueShare"></div>
+        <h2>Stock Value by Classification</h2>
+        <p class="subtle">This uses the Stock Value column from the export. Filter by Classification to drill in.</p>
+        <div class="chart" id="stockValueByClassification"></div>
       </div>
     </section>
 
@@ -100,63 +100,35 @@
       </div>
 
       <div class="card">
-        <h2>Status Share (Revenue This Year, effective price basis)</h2>
-        <div class="chart" id="statusShare"></div>
+        <h2>Classification Share (Revenue This Year)</h2>
+        <div class="chart" id="classificationShare"></div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Sales This Year vs Last Year by Status (Top 12)</h2>
-        <div class="chart" id="statusUnitsThisYearLastYear"></div>
+        <h2>Sales This Year vs Last Year by Classification (Top 12)</h2>
+        <div class="chart" id="classificationUnitsThisYearLastYear"></div>
       </div>
 
       <div class="card">
-        <h2>Top SKUs by Gross Profit This Year (effective price basis)</h2>
+        <h2>Top SKUs by Profit This Year</h2>
         <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
-        <div class="chart" id="topSkuGrossProfit"></div>
+        <div class="chart" id="topSkuProfit"></div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Top SKUs by Revenue This Year (units × selling price)</h2>
+        <h2>Top SKUs by Revenue This Year</h2>
         <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
-        <div class="chart" id="topSkuRevenueSelling"></div>
+        <div class="chart" id="topSkuRevenue"></div>
       </div>
 
       <div class="card">
-        <h2>Top SKUs by Revenue This Year (units × effective price)</h2>
-        <p class="subtle">Uses sale price when present, otherwise selling price ex VAT.</p>
-        <div class="chart" id="topSkuRevenueEffective"></div>
-      </div>
-    </section>
-
-    <section class="grid">
-      <div class="card">
-        <h2>Power Tools: Top SKUs by Revenue This Year (units × effective price)</h2>
-        <p class="subtle">Segmented using Parent Category text matching for “power” and “tool”.</p>
-        <div class="chart" id="powerTopSkuRevenueEffective"></div>
-      </div>
-
-      <div class="card">
-        <h2>Power Tools: Top SKUs by Gross Profit This Year (effective price basis)</h2>
-        <p class="subtle">This highlights the highest profit drivers within power tools.</p>
-        <div class="chart" id="powerTopSkuGrossProfit"></div>
-      </div>
-    </section>
-
-    <section class="grid">
-      <div class="card">
-        <h2>Accessories: Top SKUs by Revenue This Year (units × effective price)</h2>
-        <p class="subtle">Segmented using Parent Category text matching for “access”.</p>
-        <div class="chart" id="accTopSkuRevenueEffective"></div>
-      </div>
-
-      <div class="card">
-        <h2>Accessories: Top SKUs by Gross Profit This Year (effective price basis)</h2>
-        <p class="subtle">This highlights the highest profit drivers within accessories.</p>
-        <div class="chart" id="accTopSkuGrossProfit"></div>
+        <h2>Top SKUs by Units This Year</h2>
+        <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
+        <div class="chart" id="topSkuUnits"></div>
       </div>
     </section>
 
@@ -164,15 +136,25 @@
       <div class="table-head">
         <div>
           <h2>SKU Explorer</h2>
-          <div class="table-meta" id="tableMeta">–</div>
+          <div class="table-meta" id="tableMeta">-</div>
           <div class="table-meta" id="tableSortMeta"></div>
         </div>
 
         <div class="table-tools">
           <input id="tableSearch" type="search" placeholder="Search within table (SKU, name, ID)" />
+
+          <select id="tableBrand"><option value="">Brand (All)</option></select>
+          <select id="tableParent"><option value="">Parent (All)</option></select>
+          <select id="tableClassification"><option value="">Classification (All)</option></select>
+
+          <div class="range">
+            <input id="minStockValue" inputmode="decimal" placeholder="Min stock value" />
+            <input id="maxStockValue" inputmode="decimal" placeholder="Max stock value" />
+          </div>
+
           <label class="toggle">
             <input id="onlySelling" type="checkbox" />
-            <span>Only selling (Units This Year >0)</span>
+            <span>Only selling (Units This Year &gt;0)</span>
           </label>
         </div>
       </div>
@@ -185,16 +167,15 @@
               <th data-key="name" data-type="text">Product Name</th>
               <th data-key="brand" data-type="text">Brand</th>
               <th data-key="parent" data-type="text">Parent</th>
-              <th data-key="status" data-type="text">Status</th>
+              <th data-key="classification" data-type="text">Classification</th>
 
               <th data-key="unitsThisYear" data-type="num">Units This Year</th>
               <th data-key="unitsLastYear" data-type="num">Units Last Year</th>
 
-              <th data-key="revenueUnitsTimesEffectivePrice" data-type="num">Revenue (units × effective price)</th>
-              <th data-key="grossProfitEffectivePriceBasis" data-type="num">Gross profit (effective price basis)</th>
+              <th data-key="revenue" data-type="num">Revenue this year (units × selling price)</th>
+              <th data-key="profit" data-type="num">Profit this year (selling price basis)</th>
 
-              <th data-key="revenueUnitsTimesSellingPrice" data-type="num">Revenue (units × selling price)</th>
-              <th data-key="profitSellingPriceBasis" data-type="num">Profit (selling price basis)</th>
+              <th data-key="stockValue" data-type="num">Stock value</th>
 
               <th data-key="costEx" data-type="num">Cost ex VAT</th>
               <th data-key="sellEx" data-type="num">Selling ex VAT</th>
@@ -212,8 +193,8 @@
       </div>
 
       <p class="note">
-        Effective price uses Sale Price when present, otherwise Selling Price ex VAT. Selling price basis ignores Sale Price completely.
-        Click any table header to sort ascending or descending.
+        Revenue is Units This Year × Selling Price ex VAT. Profit is (Selling Price ex VAT − Cost Price ex VAT) × Units This Year.
+        Click any table header to sort ascending or descending. SKU stays pinned on the left when you scroll.
       </p>
     </section>
   </main>

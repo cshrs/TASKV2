@@ -22,6 +22,7 @@
 
 *{ box-sizing:border-box; }
 html, body{ height: 100%; }
+
 body{
   margin:0;
   font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
@@ -58,6 +59,7 @@ body{
   font-size: 18px;
   letter-spacing: 0.2px;
 }
+
 .title p{
   margin: 4px 0 0 0;
   font-size: 12px;
@@ -83,9 +85,11 @@ body{
   min-width: 190px;
   box-shadow: 0 4px 14px rgba(18,22,33,0.05);
 }
+
 .controls input[type="search"]:focus, .controls select:focus{
   box-shadow: 0 0 0 4px var(--ring), 0 4px 16px rgba(18,22,33,0.06);
 }
+
 .controls select{ min-width: 175px; }
 
 .file{
@@ -98,6 +102,7 @@ body{
   border-radius: var(--radiusSm);
   cursor: pointer;
 }
+
 .file input{ display:none; }
 .file span{ font-size: 12px; color: var(--muted); }
 
@@ -110,10 +115,15 @@ body{
   color: var(--text);
   box-shadow: 0 6px 18px rgba(18,22,33,0.07);
 }
+
 .btn:hover{ filter: brightness(0.985); }
 .btn:active{ transform: translateY(1px); }
 
-.wrap{ max-width: 1400px; margin: 0 auto; padding: 18px 16px 46px 16px; }
+.wrap{
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 18px 16px 46px 16px;
+}
 
 .kpis{
   display:grid;
@@ -121,6 +131,7 @@ body{
   gap: 12px;
   margin-top: 10px;
 }
+
 .kpi{
   background: var(--card);
   border: 1px solid var(--cardBorder);
@@ -130,6 +141,7 @@ body{
   min-height: 92px;
   overflow: hidden;
 }
+
 .kpi-top{ display:flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .kpi-value{ font-size: 18px; font-weight: 780; letter-spacing: 0.1px; }
 .kpi-label{ margin-top: 6px; font-size: 12px; color: var(--muted); }
@@ -154,6 +166,7 @@ body{
   margin: 0 0 6px 2px;
   font-size: 14px;
 }
+
 .subtle{
   margin: 0 0 10px 2px;
   color: var(--muted);
@@ -162,13 +175,21 @@ body{
 
 .chart{ width: 100%; height: 460px; }
 
-.table-card{ margin-top: 12px; }
+/* SKU Explorer: wider than the main wrap, centred, without changing the rest */
+.table-card{
+  margin-top: 12px;
+  width: min(96vw, 1850px);
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
 .table-head{
   display:flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
+
 .table-meta{ font-size: 12px; color: var(--muted); margin-top: 4px; }
 
 .table-tools{
@@ -178,6 +199,7 @@ body{
   align-items: center;
   justify-content: flex-end;
 }
+
 .table-tools input[type="search"]{
   border: 1px solid var(--cardBorder);
   background: var(--fieldBg);
@@ -188,7 +210,29 @@ body{
   min-width: 280px;
   box-shadow: 0 4px 14px rgba(18,22,33,0.05);
 }
+
 .table-tools input[type="search"]:focus{
+  box-shadow: 0 0 0 4px var(--ring), 0 4px 16px rgba(18,22,33,0.06);
+}
+
+.range{
+  display:flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.range input{
+  border: 1px solid var(--cardBorder);
+  background: var(--fieldBg);
+  padding: 10px 12px;
+  border-radius: var(--radiusSm);
+  outline: none;
+  color: var(--text);
+  min-width: 160px;
+  box-shadow: 0 4px 14px rgba(18,22,33,0.05);
+}
+
+.range input:focus{
   box-shadow: 0 0 0 4px var(--ring), 0 4px 16px rgba(18,22,33,0.06);
 }
 
@@ -205,6 +249,7 @@ body{
   cursor: pointer;
   user-select: none;
 }
+
 .toggle input{ accent-color: var(--p2); }
 
 .table-wrap{
@@ -215,7 +260,11 @@ body{
   margin-top: 10px;
 }
 
-table{ width: 100%; border-collapse: collapse; min-width: 1750px; }
+table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1450px;
+}
 
 thead th{
   position: sticky;
@@ -224,7 +273,7 @@ thead th{
   border-bottom: 1px solid rgba(18,22,33,0.10);
   font-size: 12px;
   text-align: left;
-  padding: 10px;
+  padding: 9px 10px;
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
@@ -239,10 +288,20 @@ thead th.sorted{
 tbody td{
   border-bottom: 1px solid rgba(18,22,33,0.06);
   font-size: 12px;
-  padding: 9px 10px;
+  padding: 8px 10px;
   white-space: nowrap;
 }
+
 tbody tr:hover{ background: rgba(144,224,197,0.13); }
+
+/* Allow some columns to wrap to reduce horizontal scrolling */
+#tbl td:nth-child(2),
+#tbl th:nth-child(2),
+#tbl td:nth-child(4),
+#tbl th:nth-child(4){
+  white-space: normal;
+  max-width: 360px;
+}
 
 .note{ margin: 10px 2px 0 2px; font-size: 12px; color: var(--muted); }
 
@@ -258,11 +317,30 @@ tbody tr:hover{ background: rgba(144,224,197,0.13); }
   border: 1px solid rgba(18,22,33,0.10);
   line-height: 1.2;
 }
+
 .pill-dot{
   width: 7px;
   height: 7px;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgba(18,22,33,0.10);
+}
+
+/* Sticky SKU column (left) */
+#tbl th:nth-child(1),
+#tbl td:nth-child(1){
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: rgba(255,255,255,0.98);
+  border-right: 1px solid rgba(18,22,33,0.10);
+}
+
+#tbl thead th:nth-child(1){
+  z-index: 6;
+}
+
+#tbl tbody tr:hover td:nth-child(1){
+  background: rgba(144,224,197,0.22);
 }
 
 @media (max-width: 1180px){
@@ -272,4 +350,9 @@ tbody tr:hover{ background: rgba(144,224,197,0.13); }
   .table-head{ flex-direction: column; }
   .table-tools{ justify-content: flex-start; }
   .table-tools input[type="search"]{ min-width: 220px; width: 100%; }
+  .table-card{
+    width: 100%;
+    margin-left: 0;
+    transform: none;
+  }
 }
