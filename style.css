@@ -1,0 +1,212 @@
+:root{
+  --bg: #f7f7fb;
+  --card: rgba(255,255,255,0.72);
+  --cardBorder: rgba(20,25,35,0.08);
+  --text: #1f2530;
+  --muted: rgba(31,37,48,0.7);
+  --shadow: 0 10px 30px rgba(20,25,35,0.10);
+  --radius: 18px;
+
+  --p1: #90e0c5;
+  --p2: #6aa6ff;
+  --p3: #ffd08a;
+  --p4: #c9b6ff;
+  --p5: #ff9fb3;
+}
+
+*{ box-sizing:border-box; }
+body{
+  margin:0;
+  font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(900px 600px at 10% 10%, rgba(144,224,197,0.30), transparent 55%),
+    radial-gradient(900px 600px at 90% 0%, rgba(201,182,255,0.28), transparent 55%),
+    radial-gradient(900px 600px at 80% 80%, rgba(255,208,138,0.25), transparent 55%),
+    radial-gradient(900px 600px at 0% 90%, rgba(106,166,255,0.22), transparent 55%),
+    var(--bg);
+}
+
+.topbar{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(14px);
+  background: rgba(247,247,251,0.75);
+  border-bottom: 1px solid var(--cardBorder);
+}
+
+.topbar-inner{
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  display:flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title h1{
+  margin:0;
+  font-size: 18px;
+  letter-spacing: 0.2px;
+}
+.title p{
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.controls{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.controls input[type="search"], .controls select{
+  border: 1px solid var(--cardBorder);
+  background: rgba(255,255,255,0.85);
+  padding: 10px 12px;
+  border-radius: 12px;
+  outline: none;
+  color: var(--text);
+  min-width: 200px;
+}
+
+.controls select{ min-width: 180px; }
+
+.file{
+  display:inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px dashed rgba(20,25,35,0.16);
+  background: rgba(255,255,255,0.6);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.file input{ display:none; }
+.file span{ font-size: 12px; color: var(--muted); }
+
+.btn{
+  border: 1px solid var(--cardBorder);
+  background: rgba(255,255,255,0.88);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor:pointer;
+  color: var(--text);
+}
+.btn:hover{ filter: brightness(0.98); }
+
+.wrap{
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 18px 16px 44px 16px;
+}
+
+.kpis{
+  display:grid;
+  grid-template-columns: repeat(6, minmax(0,1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.kpi{
+  background: var(--card);
+  border: 1px solid var(--cardBorder);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  padding: 14px 14px;
+  min-height: 82px;
+}
+.kpi-value{
+  font-size: 18px;
+  font-weight: 700;
+}
+.kpi-label{
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.grid{
+  margin-top: 12px;
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
+}
+
+.card{
+  background: var(--card);
+  border: 1px solid var(--cardBorder);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.card h2{
+  margin: 0 0 10px 2px;
+  font-size: 14px;
+}
+
+.chart{
+  width: 100%;
+  height: 460px;
+}
+
+.table-card{ margin-top: 12px; }
+.table-head{
+  display:flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.table-meta{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.table-wrap{
+  overflow:auto;
+  border-radius: 14px;
+  border: 1px solid rgba(20,25,35,0.08);
+  background: rgba(255,255,255,0.75);
+}
+
+table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1300px;
+}
+thead th{
+  position: sticky;
+  top: 0;
+  background: rgba(255,255,255,0.95);
+  border-bottom: 1px solid rgba(20,25,35,0.10);
+  font-size: 12px;
+  text-align: left;
+  padding: 10px 10px;
+  white-space: nowrap;
+}
+tbody td{
+  border-bottom: 1px solid rgba(20,25,35,0.06);
+  font-size: 12px;
+  padding: 9px 10px;
+  white-space: nowrap;
+}
+tbody tr:hover{
+  background: rgba(144,224,197,0.16);
+}
+
+.note{
+  margin: 10px 2px 0 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (max-width: 1180px){
+  .kpis{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .grid{ grid-template-columns: 1fr; }
+  .controls input[type="search"], .controls select{ min-width: 160px; }
+}
