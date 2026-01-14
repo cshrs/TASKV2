@@ -30,17 +30,8 @@
 
         <select id="brand"><option value="">Brand (All)</option></select>
         <select id="parent"><option value="">Parent Category (All)</option></select>
+        <select id="subcategory"><option value="">Subcategory (All)</option></select>
         <select id="classification"><option value="">Classification (All)</option></select>
-
-        <select id="sort">
-          <option value="profitDesc" selected>Default sort: Profit this year desc</option>
-          <option value="revenueDesc">Default sort: Revenue this year desc</option>
-          <option value="unitsThisYearDesc">Default sort: Units this year desc</option>
-          <option value="unitsLastYearDesc">Default sort: Units last year desc</option>
-          <option value="profitPctDesc">Default sort: Profit % desc</option>
-          <option value="discountDesc">Default sort: Discount % desc</option>
-          <option value="stockValueDesc">Default sort: Stock value desc</option>
-        </select>
 
         <button id="reset" class="btn" type="button">Reset</button>
       </div>
@@ -57,8 +48,8 @@
         <div class="kpi-sub" id="kpiClassificationSummary"></div>
       </div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units This Year</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units Last Year</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units sold this year</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units sold last year</div></div>
 
       <div class="kpi"><div class="kpi-value" id="kpiRevenue">-</div><div class="kpi-label">Revenue this year (units × selling price, ex VAT)</div></div>
       <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit this year (selling price basis)</div></div>
@@ -68,13 +59,13 @@
 
     <section class="grid">
       <div class="card">
-        <h2>Sales This Year vs Last Year by Brand (Top 12)</h2>
+        <h2>Units Sold This Year vs Last Year by Brand (Top 12)</h2>
         <div class="chart" id="brandUnitsThisYearLastYear"></div>
       </div>
 
       <div class="card">
         <h2>Revenue and Profit This Year by Brand (Top 12)</h2>
-        <p class="subtle">Revenue uses Units This Year × Selling Price ex VAT. Profit uses (Selling Price ex VAT − Cost Price ex VAT) × Units This Year.</p>
+        <p class="subtle">Revenue uses Units Sold This Year × Selling Price ex VAT. Profit uses (Selling Price ex VAT − Cost Price ex VAT) × Units Sold This Year.</p>
         <div class="chart" id="brandRevProfit"></div>
       </div>
     </section>
@@ -94,7 +85,7 @@
 
     <section class="grid">
       <div class="card">
-        <h2>Discount Bands vs Units This Year</h2>
+        <h2>Discount Bands vs Units Sold This Year</h2>
         <p class="subtle">Discount only uses rows that have both a Sale Price and Selling Price ex VAT.</p>
         <div class="chart" id="discountBandsUnits"></div>
       </div>
@@ -107,7 +98,7 @@
 
     <section class="grid">
       <div class="card">
-        <h2>Sales This Year vs Last Year by Classification (Top 12)</h2>
+        <h2>Units Sold This Year vs Last Year by Classification (Top 12)</h2>
         <div class="chart" id="classificationUnitsThisYearLastYear"></div>
       </div>
 
@@ -126,7 +117,7 @@
       </div>
 
       <div class="card">
-        <h2>Top SKUs by Units This Year</h2>
+        <h2>Top SKUs by Units Sold This Year</h2>
         <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
         <div class="chart" id="topSkuUnits"></div>
       </div>
@@ -145,6 +136,7 @@
 
           <select id="tableBrand"><option value="">Brand (All)</option></select>
           <select id="tableParent"><option value="">Parent (All)</option></select>
+          <select id="tableSubcategory"><option value="">Subcategory (All)</option></select>
           <select id="tableClassification"><option value="">Classification (All)</option></select>
 
           <div class="range">
@@ -152,9 +144,20 @@
             <input id="maxStockValue" inputmode="decimal" placeholder="Max stock value" />
           </div>
 
+          <div class="show">
+            <span class="show-label">Show</span>
+            <select id="tableLimit">
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+              <option value="500">500</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+
           <label class="toggle">
             <input id="onlySelling" type="checkbox" />
-            <span>Only selling (Units This Year &gt;0)</span>
+            <span>Only selling (Units sold this year &gt;0)</span>
           </label>
         </div>
       </div>
@@ -167,10 +170,11 @@
               <th data-key="name" data-type="text">Product Name</th>
               <th data-key="brand" data-type="text">Brand</th>
               <th data-key="parent" data-type="text">Parent</th>
+              <th data-key="subcategory" data-type="text">Subcategory</th>
               <th data-key="classification" data-type="text">Classification</th>
 
-              <th data-key="unitsThisYear" data-type="num">Units This Year</th>
-              <th data-key="unitsLastYear" data-type="num">Units Last Year</th>
+              <th data-key="unitsThisYear" data-type="num">Units sold this year</th>
+              <th data-key="unitsLastYear" data-type="num">Units sold last year</th>
 
               <th data-key="revenue" data-type="num">Revenue this year (units × selling price)</th>
               <th data-key="profit" data-type="num">Profit this year (selling price basis)</th>
@@ -193,7 +197,7 @@
       </div>
 
       <p class="note">
-        Revenue is Units This Year × Selling Price ex VAT. Profit is (Selling Price ex VAT − Cost Price ex VAT) × Units This Year.
+        Revenue is Units sold this year × Selling Price ex VAT. Profit is (Selling Price ex VAT − Cost Price ex VAT) × Units sold this year.
         Click any table header to sort ascending or descending. SKU stays pinned on the left when you scroll.
       </p>
     </section>

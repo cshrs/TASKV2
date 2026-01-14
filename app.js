@@ -47,6 +47,31 @@ function uniqueSorted(values){
     .sort((a,b)=>a.localeCompare(b));
 }
 
+/* ========= Grade ordering (A+ higher than A) ========= */
+function gradeRank(v){
+  const s = String(v ?? "").trim().toUpperCase();
+  const m = s.match(/^([A-Z])([+-])?$/);
+  if (!m) return null;
+
+  const letter = m[1];
+  const sign = m[2] || "";
+  const base = 26 - (letter.charCodeAt(0) - 64);
+  const bump = sign === "+" ? 0.2 : (sign === "-" ? -0.2 : 0);
+  return base + bump;
+}
+function sortClassificationOptions(values){
+  const arr = [...values];
+  arr.sort((a,b)=>{
+    const ar = gradeRank(a);
+    const br = gradeRank(b);
+    if (ar != null && br != null) return br - ar;           // higher grade first
+    if (ar != null && br == null) return -1;
+    if (ar == null && br != null) return 1;
+    return String(a).localeCompare(String(b), "en-GB", { sensitivity: "base" });
+  });
+  return arr;
+}
+
 /* ========= Colours ========= */
 const BRAND_PALETTE = ["#6aa6ff","#ff9fb3","#90e0c5","#ffd08a","#c9b6ff","#8fd3ff","#ffc6a8","#b2e1a1","#f5b3ff","#a4b0ff"];
 
@@ -129,7 +154,7 @@ async function loadFromPath(path){
   hydrate(await parseCSVText(await r.text()));
 }
 
-/* ========= Stock value column picker ========= */
+/* ========= Column pickers ========= */
 function pickStockValue(r){
   const candidates = [
     "Stock Value",
@@ -144,6 +169,23 @@ function pickStockValue(r){
     if (c in r) return toNumber(r[c]);
   }
   return NaN;
+}
+
+function pickSubcategory(r){
+  const candidates = [
+    "Subcategory",
+    "Sub Category",
+    "Sub Category Name",
+    "Sub-Category",
+    "Sub Category (Name)"
+  ];
+  for (const c of candidates){
+    if (c in r){
+      const v = String(r[c] ?? "").trim();
+      return v || "Unknown";
+    }
+  }
+  return "Unknown";
 }
 
 /* ========= Hydrate ========= */
@@ -161,6 +203,7 @@ function hydrate(rawRows){
     const unitsLastYear = toNumber(r["Total Sales Last Year"]);
     const classification = String(r["Best Seller Status"] ?? "").trim() || "Unknown";
     const parent = String(r["Parent Category"] ?? "").trim() || "Unknown";
+    const subcategory = pickSubcategory(r);
 
     const revenue = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx))
       ? unitsThisYear * sellEx
@@ -182,6 +225,7 @@ function hydrate(rawRows){
       name: String(r["Product Name"] ?? "").trim(),
       brand: String(r["Brand"] ?? "").trim() || "Unknown",
       parent,
+      subcategory,
       classification,
 
       costEx, sellEx, sale, profitPct,
@@ -210,26 +254,30 @@ function getFilters(){
     q: (document.getElementById("q").value || "").trim().toLowerCase(),
     brand: document.getElementById("brand").value,
     parent: document.getElementById("parent").value,
+    subcategory: document.getElementById("subcategory").value,
     classification: document.getElementById("classification").value,
-    sort: document.getElementById("sort").value,
 
     tableQ: (document.getElementById("tableSearch").value || "").trim().toLowerCase(),
     onlySelling: document.getElementById("onlySelling").checked,
 
     tableBrand: document.getElementById("tableBrand").value,
     tableParent: document.getElementById("tableParent").value,
+    tableSubcategory: document.getElementById("tableSubcategory").value,
     tableClassification: document.getElementById("tableClassification").value,
 
     minStockValue: toNumber(document.getElementById("minStockValue").value),
-    maxStockValue: toNumber(document.getElementById("maxStockValue").value)
+    maxStockValue: toNumber(document.getElementById("maxStockValue").value),
+
+    tableLimit: document.getElementById("tableLimit").value
   };
 }
 
 function applyTopFilters(){
   const f = getFilters();
-  let out = rows.filter(r=>{
+  const out = rows.filter(r=>{
     if (f.brand && r.brand !== f.brand) return false;
     if (f.parent && r.parent !== f.parent) return false;
+    if (f.subcategory && r.subcategory !== f.subcategory) return false;
     if (f.classification && r.classification !== f.classification) return false;
 
     if (f.q){
@@ -239,7 +287,6 @@ function applyTopFilters(){
     return true;
   });
 
-  out = sortItems(out, f.sort);
   return out;
 }
 
@@ -251,6 +298,7 @@ function applyTableFilters(items){
 
   if (f.tableBrand) out = out.filter(r => r.brand === f.tableBrand);
   if (f.tableParent) out = out.filter(r => r.parent === f.tableParent);
+  if (f.tableSubcategory) out = out.filter(r => r.subcategory === f.tableSubcategory);
   if (f.tableClassification) out = out.filter(r => r.classification === f.tableClassification);
 
   if (Number.isFinite(f.minStockValue)) out = out.filter(r => Number.isFinite(r.stockValue) && r.stockValue >= f.minStockValue);
@@ -263,42 +311,34 @@ function applyTableFilters(items){
   return out;
 }
 
-function sortItems(items, mode){
-  const safe = (v)=> Number.isFinite(v) ? v : -Infinity;
-  const copy = [...items];
-
-  if (mode === "profitDesc") copy.sort((a,b)=> safe(b.profit) - safe(a.profit));
-  else if (mode === "revenueDesc") copy.sort((a,b)=> safe(b.revenue) - safe(a.revenue));
-  else if (mode === "unitsThisYearDesc") copy.sort((a,b)=> safe(b.unitsThisYear) - safe(a.unitsThisYear));
-  else if (mode === "unitsLastYearDesc") copy.sort((a,b)=> safe(b.unitsLastYear) - safe(a.unitsLastYear));
-  else if (mode === "profitPctDesc") copy.sort((a,b)=> safe(b.profitPct) - safe(a.profitPct));
-  else if (mode === "discountDesc") copy.sort((a,b)=> safe(b.discountPct) - safe(a.discountPct));
-  else if (mode === "stockValueDesc") copy.sort((a,b)=> safe(b.stockValue) - safe(a.stockValue));
-
-  return copy;
-}
-
 function populateTopFilters(){
   const remember = {
     brand: document.getElementById("brand").value,
     parent: document.getElementById("parent").value,
+    subcategory: document.getElementById("subcategory").value,
     classification: document.getElementById("classification").value
   };
 
   const brandSel = document.getElementById("brand");
   const parentSel = document.getElementById("parent");
+  const subSel = document.getElementById("subcategory");
   const classSel = document.getElementById("classification");
 
   brandSel.length = 1;
   parentSel.length = 1;
+  subSel.length = 1;
   classSel.length = 1;
 
   uniqueSorted(rows.map(r=>r.brand)).forEach(v=> brandSel.add(new Option(v, v)));
   uniqueSorted(rows.map(r=>r.parent)).forEach(v=> parentSel.add(new Option(v, v)));
-  uniqueSorted(rows.map(r=>r.classification)).forEach(v=> classSel.add(new Option(v, v)));
+  uniqueSorted(rows.map(r=>r.subcategory)).forEach(v=> subSel.add(new Option(v, v)));
+
+  const classes = uniqueSorted(rows.map(r=>r.classification));
+  sortClassificationOptions(classes).forEach(v=> classSel.add(new Option(v, v)));
 
   if (remember.brand) brandSel.value = remember.brand;
   if (remember.parent) parentSel.value = remember.parent;
+  if (remember.subcategory) subSel.value = remember.subcategory;
   if (remember.classification) classSel.value = remember.classification;
 }
 
@@ -306,23 +346,30 @@ function populateTableFilters(){
   const remember = {
     b: document.getElementById("tableBrand").value,
     p: document.getElementById("tableParent").value,
+    s: document.getElementById("tableSubcategory").value,
     c: document.getElementById("tableClassification").value
   };
 
   const bSel = document.getElementById("tableBrand");
   const pSel = document.getElementById("tableParent");
+  const sSel = document.getElementById("tableSubcategory");
   const cSel = document.getElementById("tableClassification");
 
   bSel.length = 1;
   pSel.length = 1;
+  sSel.length = 1;
   cSel.length = 1;
 
   uniqueSorted(rows.map(r=>r.brand)).forEach(v=> bSel.add(new Option(v, v)));
   uniqueSorted(rows.map(r=>r.parent)).forEach(v=> pSel.add(new Option(v, v)));
-  uniqueSorted(rows.map(r=>r.classification)).forEach(v=> cSel.add(new Option(v, v)));
+  uniqueSorted(rows.map(r=>r.subcategory)).forEach(v=> sSel.add(new Option(v, v)));
+
+  const classes = uniqueSorted(rows.map(r=>r.classification));
+  sortClassificationOptions(classes).forEach(v=> cSel.add(new Option(v, v)));
 
   if (remember.b) bSel.value = remember.b;
   if (remember.p) pSel.value = remember.p;
+  if (remember.s) sSel.value = remember.s;
   if (remember.c) cSel.value = remember.c;
 }
 
@@ -339,8 +386,6 @@ function aggByBrand(items){
     o.revenue += Number.isFinite(r.revenue) ? r.revenue : 0;
     o.profit += Number.isFinite(r.profit) ? r.profit : 0;
   }
-
-  /* Explicitly ensure high to low for revenue and profit graphs */
   return [...m.values()].sort((a,b)=> (b.revenue - a.revenue) || (b.profit - a.profit));
 }
 
@@ -409,10 +454,10 @@ function drawBrandUnitsThisYearLastYear(items){
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
   safePlot("brandUnitsThisYearLastYear", [
-    { type:"bar", name:"Units This Year", x:labels, y:rows2.map(x=>x.unitsThisYear), marker:{ color: colours, opacity: 0.82 } },
-    { type:"bar", name:"Units Last Year", x:labels, y:rows2.map(x=>x.unitsLastYear), marker:{ color: colours, opacity: 0.45 } }
+    { type:"bar", name:"Units sold this year", x:labels, y:rows2.map(x=>x.unitsThisYear), marker:{ color: colours, opacity: 0.82 } },
+    { type:"bar", name:"Units sold last year", x:labels, y:rows2.map(x=>x.unitsLastYear), marker:{ color: colours, opacity: 0.45 } }
   ], {
-    title:"Sales This Year vs Last Year by Brand (Top 12)",
+    title:"Units Sold This Year vs Last Year by Brand (Top 12)",
     barmode:"group",
     xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels },
     yaxis:{ title:"Units" }
@@ -420,7 +465,7 @@ function drawBrandUnitsThisYearLastYear(items){
 }
 
 function drawBrandRevProfit(items){
-  const rows2 = aggByBrand(items).slice(0,12); /* already sorted high to low */
+  const rows2 = aggByBrand(items).slice(0,12);
   const labels = rows2.map(x=>x.k);
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
@@ -447,7 +492,7 @@ function drawParentRevenueShare(items){
 }
 
 function drawStockValueByClassification(items){
-  const rows2 = aggByClassificationStockValue(items); /* sorted high to low */
+  const rows2 = aggByClassificationStockValue(items);
   const labels = rows2.map(x=>x.k);
 
   safePlot("stockValueByClassification", [{
@@ -478,12 +523,12 @@ function drawDiscountBandsUnits(items){
     type:"bar",
     x: rows2.map(x=>x.band),
     y: rows2.map(x=>x.units),
-    hovertemplate:"%{x}<br>Units this year: %{y:,.0f}<extra></extra>",
+    hovertemplate:"%{x}<br>Units sold this year: %{y:,.0f}<extra></extra>",
     marker:{ opacity: 0.85 }
   }], {
-    title:"Discount Bands vs Units This Year",
+    title:"Discount Bands vs Units Sold This Year",
     xaxis:{ automargin:true },
-    yaxis:{ title:"Units this year" }
+    yaxis:{ title:"Units sold this year" }
   });
 }
 
@@ -505,10 +550,10 @@ function drawClassificationUnitsThisYearLastYear(items){
   const colours = labels.map(s=> classificationColour.get(s) || "#cbd5e1");
 
   safePlot("classificationUnitsThisYearLastYear", [
-    { type:"bar", name:"Units This Year", x:labels, y:rows2.map(x=>x.thisYear), marker:{ color: colours, opacity: 0.82 } },
-    { type:"bar", name:"Units Last Year", x:labels, y:rows2.map(x=>x.lastYear), marker:{ color: colours, opacity: 0.45 } }
+    { type:"bar", name:"Units sold this year", x:labels, y:rows2.map(x=>x.thisYear), marker:{ color: colours, opacity: 0.82 } },
+    { type:"bar", name:"Units sold last year", x:labels, y:rows2.map(x=>x.lastYear), marker:{ color: colours, opacity: 0.45 } }
   ], {
-    title:"Sales This Year vs Last Year by Classification (Top 12)",
+    title:"Units Sold This Year vs Last Year by Classification (Top 12)",
     barmode:"group",
     xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels },
     yaxis:{ title:"Units" }
@@ -529,7 +574,7 @@ function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
 
   const hover = top.map(r =>
     `<b>${r.sku}</b><br>${r.name}` +
-    `<br>${r.brand} | ${r.parent}` +
+    `<br>${r.brand} | ${r.parent} | ${r.subcategory}` +
     `<br>Classification: ${r.classification}` +
     `<br>${valueLabel}: ${isMoney ? fmtGBP(r.v) : fmtInt(r.v)}`
   );
@@ -572,26 +617,13 @@ function renderKpis(items){
   }
 }
 
-/* ========= Table sorting (A+ higher than A) ========= */
-function gradeRank(v){
-  const s = String(v ?? "").trim().toUpperCase();
-  const m = s.match(/^([A-Z])([+-])?$/);
-  if (!m) return null;
-
-  const letter = m[1];
-  const sign = m[2] || "";
-  const base = 26 - (letter.charCodeAt(0) - 64);
-  const bump = sign === "+" ? 0.2 : (sign === "-" ? -0.2 : 0);
-  return base + bump;
-}
-
+/* ========= Table sorting ========= */
 function compareText(a, b){
   const ar = gradeRank(a);
   const br = gradeRank(b);
   if (ar != null && br != null) return ar - br;
   return String(a ?? "").localeCompare(String(b ?? ""), "en-GB", { sensitivity: "base" });
 }
-
 function compareNum(a, b){
   const na = Number.isFinite(a) ? a : NaN;
   const nb = Number.isFinite(b) ? b : NaN;
@@ -600,7 +632,6 @@ function compareNum(a, b){
   if (!Number.isFinite(na) && Number.isFinite(nb)) return -1;
   return 0;
 }
-
 function applyTableSort(items){
   if (!tableSortKey) return items;
 
@@ -618,7 +649,6 @@ function applyTableSort(items){
 
   return copy;
 }
-
 function updateSortHeaderUI(){
   const headers = document.querySelectorAll("#tbl thead th[data-key]");
   headers.forEach(h=>{
@@ -637,7 +667,6 @@ function updateSortHeaderUI(){
     meta.textContent = tableSortKey ? `Table sort: ${tableSortKey} (${tableSortDir})` : "";
   }
 }
-
 function bindTableHeaderSorting(){
   const headers = document.querySelectorAll("#tbl thead th[data-key]");
   headers.forEach(h=>{
@@ -660,10 +689,11 @@ function renderTable(items){
   const tbody = document.querySelector("#tbl tbody");
   tbody.innerHTML = "";
 
+  const f = getFilters();
   const filtered = applyTableFilters(items);
   const sorted = applyTableSort(filtered);
 
-  const limit = 1400;
+  const limit = (f.tableLimit === "all") ? sorted.length : Math.max(1, parseInt(f.tableLimit, 10) || 50);
   const shown = sorted.slice(0, limit);
 
   for (const r of shown){
@@ -676,6 +706,7 @@ function renderTable(items){
       <td>${r.name}</td>
       <td>${brandPill}</td>
       <td>${r.parent}</td>
+      <td>${r.subcategory}</td>
       <td>${classPill}</td>
 
       <td>${fmtInt(r.unitsThisYear)}</td>
@@ -701,8 +732,7 @@ function renderTable(items){
 
   const meta = document.getElementById("tableMeta");
   if (meta){
-    const more = filtered.length > limit ? ` (showing first ${limit.toLocaleString("en-GB")})` : "";
-    meta.textContent = `${filtered.length.toLocaleString("en-GB")} rows in table after SKU Explorer filters${more}`;
+    meta.textContent = `${filtered.length.toLocaleString("en-GB")} rows match SKU Explorer filters (showing ${shown.length.toLocaleString("en-GB")})`;
   }
 }
 
@@ -724,7 +754,7 @@ function refresh(){
 
   drawTopSkuMetric(items, "topSkuProfit", "Top SKUs by Profit This Year", r => r.profit, "Profit", true);
   drawTopSkuMetric(items, "topSkuRevenue", "Top SKUs by Revenue This Year", r => r.revenue, "Revenue", true);
-  drawTopSkuMetric(items, "topSkuUnits", "Top SKUs by Units This Year", r => r.unitsThisYear, "Units", false);
+  drawTopSkuMetric(items, "topSkuUnits", "Top SKUs by Units Sold This Year", r => r.unitsThisYear, "Units", false);
 
   renderTable(items);
 }
@@ -734,16 +764,18 @@ function resetFilters(){
   document.getElementById("q").value = "";
   document.getElementById("brand").value = "";
   document.getElementById("parent").value = "";
+  document.getElementById("subcategory").value = "";
   document.getElementById("classification").value = "";
-  document.getElementById("sort").value = "profitDesc";
 
   document.getElementById("tableSearch").value = "";
   document.getElementById("onlySelling").checked = false;
   document.getElementById("tableBrand").value = "";
   document.getElementById("tableParent").value = "";
+  document.getElementById("tableSubcategory").value = "";
   document.getElementById("tableClassification").value = "";
   document.getElementById("minStockValue").value = "";
   document.getElementById("maxStockValue").value = "";
+  document.getElementById("tableLimit").value = "50";
 
   tableSortKey = "";
   tableSortDir = "desc";
@@ -760,11 +792,16 @@ function bind(){
 
   document.getElementById("reset").addEventListener("click", resetFilters);
 
-  ["q","brand","parent","classification","sort"].forEach(id=>{
+  ["q","brand","parent","subcategory","classification"].forEach(id=>{
     document.getElementById(id).addEventListener("input", debounce(refresh, 140));
+    document.getElementById(id).addEventListener("change", debounce(refresh, 140));
   });
 
-  ["tableSearch","onlySelling","tableBrand","tableParent","tableClassification","minStockValue","maxStockValue"].forEach(id=>{
+  [
+    "tableSearch","onlySelling",
+    "tableBrand","tableParent","tableSubcategory","tableClassification",
+    "minStockValue","maxStockValue","tableLimit"
+  ].forEach(id=>{
     const el = document.getElementById(id);
     el.addEventListener("input", debounce(refresh, 140));
     el.addEventListener("change", debounce(refresh, 140));
