@@ -62,7 +62,14 @@
 
   <main class="wrap">
     <section class="kpis">
-      <div class="kpi"><div class="kpi-value" id="kpiProducts">–</div><div class="kpi-label">Products</div></div>
+      <div class="kpi">
+        <div class="kpi-top">
+          <div class="kpi-value" id="kpiProducts">–</div>
+          <div class="kpi-label">Products</div>
+        </div>
+        <div class="kpi-sub" id="kpiStatusSummary"></div>
+      </div>
+
       <div class="kpi"><div class="kpi-value" id="kpiUnitsTy">–</div><div class="kpi-label">Units (This Year)</div></div>
       <div class="kpi"><div class="kpi-value" id="kpiUnitsLy">–</div><div class="kpi-label">Units (Last Year)</div></div>
       <div class="kpi"><div class="kpi-value" id="kpiRevenueTy">–</div><div class="kpi-label">Estimated Revenue TY (ex VAT)</div></div>
@@ -84,8 +91,8 @@
 
     <section class="grid">
       <div class="card">
-        <h2>Stock Value vs Units (Bubble: Available Stock)</h2>
-        <p class="subtle">Colour by brand. Units axis uses the selector (TY or LY).</p>
+        <h2>Stock Value vs Units (Scatter)</h2>
+        <p class="subtle">No bubble sizing. Colour by brand. Units axis uses the selector (TY or LY).</p>
         <div class="chart" id="stockVsUnits"></div>
       </div>
 
@@ -116,15 +123,30 @@
       </div>
 
       <div class="card">
-        <h2>Top SKUs by Gross Profit TY (Top 20)</h2>
+        <h2>Top SKUs by Gross Profit TY</h2>
+        <p class="subtle">Shows SKU and name directly on the axis.</p>
         <div class="chart" id="topSkuGP"></div>
       </div>
     </section>
 
     <section class="card table-card">
       <div class="table-head">
-        <h2>SKU Explorer</h2>
-        <div class="table-meta" id="tableMeta">–</div>
+        <div>
+          <h2>SKU Explorer</h2>
+          <div class="table-meta" id="tableMeta">–</div>
+        </div>
+
+        <div class="table-tools">
+          <input id="tableSearch" type="search" placeholder="Search within table (SKU, name, ID)" />
+          <label class="toggle">
+            <input id="onlySelling" type="checkbox" />
+            <span>Only selling (Units TY >0)</span>
+          </label>
+          <label class="toggle">
+            <input id="onlyOnOrder" type="checkbox" />
+            <span>Only on order</span>
+          </label>
+        </div>
       </div>
 
       <div class="table-wrap">

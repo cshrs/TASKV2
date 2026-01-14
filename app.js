@@ -52,16 +52,66 @@ function uniqueSorted(values){
 
 /* ========= Colours ========= */
 const BRAND_PALETTE = ["#6aa6ff","#ff9fb3","#90e0c5","#ffd08a","#c9b6ff","#8fd3ff","#ffc6a8","#b2e1a1","#f5b3ff","#a4b0ff"];
-const STATUS_PALETTE = ["#c9b6ff","#ffd08a","#90e0c5","#ff9fb3","#6aa6ff","#b2e1a1","#8fd3ff","#ffc6a8"];
+
+/* Status colours: consistent and legible pastel tags */
+const STATUS_COLOURS = {
+  "Best Seller": "#90e0c5",
+  "Core": "#6aa6ff",
+  "Seasonal": "#ffd08a",
+  "New": "#c9b6ff",
+  "Slow": "#ff9fb3",
+  "Discontinued": "#a4b0ff",
+  "Unknown": "#cbd5e1"
+};
+const STATUS_FALLBACK = ["#90e0c5","#6aa6ff","#ffd08a","#c9b6ff","#ff9fb3","#b2e1a1","#8fd3ff","#ffc6a8","#a4b0ff"];
 
 let brandColour = new Map();
 let statusColour = new Map();
+
+function normaliseKey(s){
+  return String(s ?? "").trim().toLowerCase().replace(/\s+/g," ");
+}
+
 function buildColourMaps(items){
   const brands = uniqueSorted(items.map(r=>r.brand || "Unknown"));
   brandColour = new Map(brands.map((b,i)=>[b, BRAND_PALETTE[i % BRAND_PALETTE.length]]));
 
   const statuses = uniqueSorted(items.map(r=>r.status || "Unknown"));
-  statusColour = new Map(statuses.map((s,i)=>[s, STATUS_PALETTE[i % STATUS_PALETTE.length]]));
+  const pairs = [];
+  let i = 0;
+  for (const st of statuses){
+    const k = normaliseKey(st);
+    const exact = STATUS_COLOURS[st] || STATUS_COLOURS[k] || null;
+    pairs.push([st, exact || STATUS_FALLBACK[i++ % STATUS_FALLBACK.length]]);
+  }
+  statusColour = new Map(pairs);
+}
+
+function hexToRgba(hex, alpha){
+  const h = String(hex || "").replace("#","");
+  if (h.length !== 6) return `rgba(203,213,225,${alpha})`;
+  const r = parseInt(h.slice(0,2),16);
+  const g = parseInt(h.slice(2,4),16);
+  const b = parseInt(h.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function statusPillHTML(status){
+  const col = statusColour.get(status) || "#cbd5e1";
+  const bg = hexToRgba(col, 0.22);
+  return `<span class="pill" style="background:${bg};">
+    <span class="pill-dot" style="background:${col};"></span>
+    ${status}
+  </span>`;
+}
+
+function brandPillHTML(brand){
+  const col = brandColour.get(brand) || "#cbd5e1";
+  const bg = hexToRgba(col, 0.18);
+  return `<span class="pill" style="background:${bg};">
+    <span class="pill-dot" style="background:${col};"></span>
+    ${brand}
+  </span>`;
 }
 
 /* ========= State ========= */
@@ -117,15 +167,16 @@ function hydrate(rawRows){
     const grossProfitTy = (Number.isFinite(unitsTy) && Number.isFinite(gpPerUnit)) ? unitsTy * gpPerUnit : NaN;
 
     const weeklyRate = Number.isFinite(unitsTy) && unitsTy > 0 ? (unitsTy / 52) : 0;
-    const weeksCover = (Number.isFinite(avail) && weeklyRate > 0) ? (avail / weeklyRate) : NaN;
+    const weeksCoverRaw = (Number.isFinite(avail) && weeklyRate > 0) ? (avail / weeklyRate) : NaN;
+    const weeksCover = Number.isFinite(weeksCoverRaw) ? Math.min(weeksCoverRaw, 260) : NaN;
 
     return {
       productId: String(r["Product ID"] ?? "").trim(),
       sku: String(r["Product SKU"] ?? "").trim(),
       name: String(r["Product Name"] ?? "").trim(),
 
-      brand: String(r["Brand"] ?? "").trim(),
-      parent: String(r["Parent Category"] ?? "").trim(),
+      brand: String(r["Brand"] ?? "").trim() || "Unknown",
+      parent: String(r["Parent Category"] ?? "").trim() || "Unknown",
       status,
       onOrder,
 
@@ -156,7 +207,11 @@ function getFilters(){
     status: document.getElementById("status").value,
     onOrder: document.getElementById("onOrder").value,
     unitsMode: document.getElementById("unitsMode").value,
-    sort: document.getElementById("sort").value
+    sort: document.getElementById("sort").value,
+
+    tableQ: (document.getElementById("tableSearch").value || "").trim().toLowerCase(),
+    onlySelling: document.getElementById("onlySelling").checked,
+    onlyOnOrder: document.getElementById("onlyOnOrder").checked
   };
 }
 
@@ -183,6 +238,20 @@ function applyFilters(){
   return out;
 }
 
+function applyTableFilters(items){
+  const f = getFilters();
+  let out = items;
+
+  if (f.onlySelling) out = out.filter(r => Number.isFinite(r.unitsTy) && r.unitsTy > 0);
+  if (f.onlyOnOrder) out = out.filter(r => r.onOrder === true);
+
+  if (f.tableQ){
+    out = out.filter(r => (`${r.sku} ${r.name} ${r.productId}`.toLowerCase().includes(f.tableQ)));
+  }
+
+  return out;
+}
+
 function sortItems(items, mode){
   const safe = (v)=> Number.isFinite(v) ? v : -Infinity;
   const safePos = (v)=> Number.isFinite(v) ? v : Infinity;
@@ -203,6 +272,12 @@ function sortItems(items, mode){
 }
 
 function populateFilters(){
+  const remember = {
+    brand: document.getElementById("brand").value,
+    parent: document.getElementById("parent").value,
+    status: document.getElementById("status").value
+  };
+
   const brandSel = document.getElementById("brand");
   const parentSel = document.getElementById("parent");
   const statusSel = document.getElementById("status");
@@ -214,6 +289,10 @@ function populateFilters(){
   uniqueSorted(rows.map(r=>r.brand)).forEach(v=> brandSel.add(new Option(v, v)));
   uniqueSorted(rows.map(r=>r.parent)).forEach(v=> parentSel.add(new Option(v, v)));
   uniqueSorted(rows.map(r=>r.status)).forEach(v=> statusSel.add(new Option(v, v)));
+
+  if (remember.brand) brandSel.value = remember.brand;
+  if (remember.parent) parentSel.value = remember.parent;
+  if (remember.status) statusSel.value = remember.status;
 }
 
 /* ========= Aggregations ========= */
@@ -321,12 +400,12 @@ function drawBrandRevGp(items){
   });
 }
 
+/* No bubble chart: fixed marker size scatter */
 function drawStockVsUnits(items){
   const mode = document.getElementById("unitsMode").value;
 
   const x = [];
   const y = [];
-  const size = [];
   const colour = [];
   const text = [];
 
@@ -337,21 +416,15 @@ function drawStockVsUnits(items){
 
     x.push(Number.isFinite(units) ? units : 0);
     y.push(sv);
-
-    const a = Number.isFinite(r.avail) ? r.avail : 0;
-    size.push(clamp(Math.sqrt(a) * 5, 7, 52));
-
-    colour.push(brandColour.get(r.brand) || "#bbb");
+    colour.push(brandColour.get(r.brand) || "#cbd5e1");
 
     text.push(
       `${r.sku} | ${r.name}` +
-      `<br>Brand: ${r.brand}` +
+      `<br>${r.brand} | ${r.parent}` +
       `<br>Status: ${r.status}` +
       `<br>Units TY: ${fmtInt(r.unitsTy)} Units LY: ${fmtInt(r.unitsLy)}` +
-      `<br>Revenue TY: ${fmtGBP(r.revenueTy)}` +
-      `<br>GP TY: ${fmtGBP(r.grossProfitTy)}` +
-      `<br>Stock Value: ${fmtGBP(r.stockValue)}` +
-      `<br>Available: ${fmtInt(r.avail)} Supplier: ${fmtInt(r.supplier)} On order: ${r.onOrder ? "Yes" : "No"}`
+      `<br>Revenue TY: ${fmtGBP(r.revenueTy)} GP TY: ${fmtGBP(r.grossProfitTy)}` +
+      `<br>Stock Value: ${fmtGBP(r.stockValue)} Available: ${fmtInt(r.avail)}`
     );
   }
 
@@ -361,9 +434,9 @@ function drawStockVsUnits(items){
     x, y,
     text,
     hoverinfo:"text",
-    marker:{ size, color: colour, opacity: 0.72 }
+    marker:{ size: 9, color: colour, opacity: 0.72 }
   }], {
-    title:"Stock Value vs Units (Bubble: Available Stock)",
+    title:"Stock Value vs Units (Scatter)",
     xaxis:{ title: mode === "ly" ? "Units (Last Year)" : "Units (This Year)", rangemode:"tozero" },
     yaxis:{ title:"Stock Value (£)", rangemode:"tozero" }
   });
@@ -398,14 +471,16 @@ function drawDiscountVsProfit(items){
 
     x.push(r.discountPct);
     y.push(r.profitPct);
-    colour.push(statusColour.get(r.status) || "#bbb");
+
+    const c = statusColour.get(r.status) || "#cbd5e1";
+    colour.push(c);
 
     text.push(
       `${r.sku} | ${r.name}` +
       `<br>Status: ${r.status}` +
       `<br>Discount: ${fmtPct(r.discountPct)}` +
       `<br>Profit %: ${fmtPct(r.profitPct)}` +
-      `<br>Sell ex VAT: ${fmtGBP(r.sellEx)} Sale: ${Number.isFinite(r.sale) && r.sale > 0 ? fmtGBP(r.sale) : "–"}`
+      `<br>Selling ex VAT: ${fmtGBP(r.sellEx)} Sale: ${Number.isFinite(r.sale) && r.sale > 0 ? fmtGBP(r.sale) : "–"}`
     );
   }
 
@@ -415,7 +490,7 @@ function drawDiscountVsProfit(items){
     x, y,
     text,
     hoverinfo:"text",
-    marker:{ color: colour, opacity: 0.70 }
+    marker:{ color: colour, opacity: 0.68, size: 9 }
   }], {
     title:"Discount vs Profit % (Colour: Status)",
     xaxis:{ title:"Discount %", zeroline:true },
@@ -431,7 +506,7 @@ function drawStatusShare(items){
     values: rows2.map(x=>x.v),
     hole: 0.45,
     textinfo:"label+percent",
-    marker:{ colors: rows2.map(x=> statusColour.get(x.k) || "#bbb") }
+    marker:{ colors: rows2.map(x=> statusColour.get(x.k) || "#cbd5e1") }
   }], {
     title:"Status Share (Revenue TY)"
   });
@@ -440,7 +515,7 @@ function drawStatusShare(items){
 function drawStatusUnitsTyLy(items){
   const rows2 = aggByStatusUnits(items).slice(0,12);
   const labels = rows2.map(x=>x.k);
-  const colours = labels.map(s=> statusColour.get(s) || "#bbb");
+  const colours = labels.map(s=> statusColour.get(s) || "#cbd5e1");
 
   safePlot("statusUnitsTyLy", [
     { type:"bar", name:"Units TY", x:labels, y:rows2.map(x=>x.ty), marker:{ color: colours, opacity: 0.80 } },
@@ -453,27 +528,38 @@ function drawStatusUnitsTyLy(items){
   });
 }
 
+/* Horizontal labels so you can see every SKU */
 function drawTopSkuGP(items){
   const top = items
-    .map(r=>({ label: `${r.sku} | ${r.name}`.slice(0, 70), v: r.grossProfitTy, brand: r.brand }))
+    .map(r=>({
+      label: `${r.sku} | ${r.name}`,
+      v: r.grossProfitTy,
+      brand: r.brand
+    }))
     .filter(x=>Number.isFinite(x.v) && x.v > 0)
     .sort((a,b)=> b.v - a.v)
-    .slice(0, 20);
+    .slice(0, 30);
+
+  const y = top.map(t => t.label);
+  const x = top.map(t => t.v);
+  const colours = top.map((t,i)=> brandColour.get(t.brand) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
   safePlot("topSkuGP", [{
     type:"bar",
-    x: top.map(t=>t.label),
-    y: top.map(t=>t.v),
-    marker:{ color: top.map((t,i)=> brandColour.get(t.brand) || BRAND_PALETTE[i % BRAND_PALETTE.length]) },
-    hovertemplate:"£%{y:,.0f}<extra></extra>"
+    orientation:"h",
+    y,
+    x,
+    marker:{ color: colours, opacity: 0.90 },
+    hovertemplate:"£%{x:,.0f}<extra></extra>"
   }], {
-    title:"Top SKUs by Gross Profit TY (Top 20)",
-    xaxis:{ automargin:true, showticklabels:false },
-    yaxis:{ title:"£" }
+    title:"Top SKUs by Gross Profit TY (Top 30)",
+    xaxis:{ title:"£" },
+    yaxis:{ automargin:true },
+    margin: { t: 56, l: 240, r: 18, b: 60 }
   });
 }
 
-/* ========= KPIs + table ========= */
+/* ========= KPIs + status mini tags ========= */
 function renderKpis(items){
   document.getElementById("kpiProducts").textContent = items.length.toLocaleString("en-GB");
 
@@ -488,23 +574,39 @@ function renderKpis(items){
   document.getElementById("kpiRevenueTy").textContent = fmtGBP(revTy);
   document.getElementById("kpiGPTY").textContent = fmtGBP(gpTy);
   document.getElementById("kpiStockValue").textContent = fmtGBP(stockValue);
+
+  const statuses = aggByStatusRevenue(items).slice(0, 3);
+  const el = document.getElementById("kpiStatusSummary");
+  if (el){
+    el.innerHTML = statuses.map(s => {
+      const col = statusColour.get(s.k) || "#cbd5e1";
+      const bg = hexToRgba(col, 0.18);
+      return `<span class="pill" style="background:${bg};">
+        <span class="pill-dot" style="background:${col};"></span>
+        ${s.k}: ${fmtGBP(s.v)}
+      </span>`;
+    }).join("");
+  }
 }
 
+/* ========= Table ========= */
 function renderTable(items){
   const tbody = document.querySelector("#tbl tbody");
   tbody.innerHTML = "";
 
-  const limit = 1000;
-  const shown = items.slice(0, limit);
+  const filtered = applyTableFilters(items);
+
+  const limit = 1200;
+  const shown = filtered.slice(0, limit);
 
   for (const r of shown){
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.sku}</td>
       <td>${r.name}</td>
-      <td>${r.brand}</td>
+      <td>${brandPillHTML(r.brand)}</td>
       <td>${r.parent}</td>
-      <td>${r.status}</td>
+      <td>${statusPillHTML(r.status)}</td>
       <td>${fmtInt(r.unitsTy)}</td>
       <td>${fmtInt(r.unitsLy)}</td>
       <td>${fmtGBP(r.revenueTy)}</td>
@@ -523,8 +625,11 @@ function renderTable(items){
     tbody.appendChild(tr);
   }
 
-  document.getElementById("tableMeta").textContent =
-    `Showing ${shown.length.toLocaleString("en-GB")} of ${items.length.toLocaleString("en-GB")} matching SKUs`;
+  const meta = document.getElementById("tableMeta");
+  if (meta){
+    const more = filtered.length > limit ? ` (showing first ${limit.toLocaleString("en-GB")})` : "";
+    meta.textContent = `${filtered.length.toLocaleString("en-GB")} rows in table after table filters${more}`;
+  }
 }
 
 /* ========= Refresh ========= */
@@ -556,6 +661,11 @@ function resetFilters(){
   document.getElementById("onOrder").value = "";
   document.getElementById("unitsMode").value = "ty";
   document.getElementById("sort").value = "gpDesc";
+
+  document.getElementById("tableSearch").value = "";
+  document.getElementById("onlySelling").checked = false;
+  document.getElementById("onlyOnOrder").checked = false;
+
   refresh();
 }
 
@@ -569,6 +679,11 @@ function bind(){
 
   ["q","brand","parent","status","onOrder","unitsMode","sort"].forEach(id=>{
     document.getElementById(id).addEventListener("input", debounce(refresh, 140));
+  });
+
+  ["tableSearch","onlySelling","onlyOnOrder"].forEach(id=>{
+    document.getElementById(id).addEventListener("input", debounce(refresh, 140));
+    document.getElementById(id).addEventListener("change", debounce(refresh, 140));
   });
 }
 
