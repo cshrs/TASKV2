@@ -47,6 +47,29 @@ function uniqueSorted(values){
     .sort((a,b)=>a.localeCompare(b));
 }
 
+/* ========= Dependent dropdown helpers ========= */
+function setSelectOptions(selectEl, values, keepValue = ""){
+  const first = selectEl.options[0];
+  const firstText = first ? first.textContent : "Select";
+  const firstVal = first ? first.value : "";
+  selectEl.innerHTML = "";
+  selectEl.add(new Option(firstText, firstVal));
+  values.forEach(v => selectEl.add(new Option(v, v)));
+  if (keepValue && values.includes(keepValue)) selectEl.value = keepValue;
+}
+
+function setSelectPlaceholder(selectEl, placeholderText){
+  selectEl.innerHTML = "";
+  selectEl.add(new Option(placeholderText, ""));
+  selectEl.value = "";
+}
+
+function enableSelect(selectEl, enabled){
+  selectEl.disabled = !enabled;
+  selectEl.style.opacity = enabled ? "1" : "0.65";
+  selectEl.style.cursor = enabled ? "pointer" : "not-allowed";
+}
+
 /* ========= Grade ordering (A+ higher than A) ========= */
 function gradeRank(v){
   const s = String(v ?? "").trim().toUpperCase();
@@ -165,7 +188,8 @@ function pickStockValue(r){
     "Stock Value (ex VAT)",
     "Stock Value (£)",
     "Stock Value GBP",
-    "Stock Value Total"
+    "Stock Value Total",
+    "Stock £"
   ];
   for (const c of candidates){
     if (c in r) return toNumber(r[c]);
@@ -244,11 +268,12 @@ function hydrate(rawRows){
   });
 
   buildColourMaps(rows);
-  populateTopFilters();
-  populateTableFilters();
 
   tableSortKey = "";
   tableSortDir = "desc";
+
+  populateTopFilters();
+  populateTableFilters();
   refresh();
 }
 
@@ -313,66 +338,65 @@ function applyTableFilters(items){
   return out;
 }
 
+/* ========= Dependent dropdowns (Parent -> Subcategory) ========= */
 function populateTopFilters(){
-  const remember = {
-    brand: document.getElementById("brand").value,
-    parent: document.getElementById("parent").value,
-    subcategory: document.getElementById("subcategory").value,
-    classification: document.getElementById("classification").value
-  };
-
   const brandSel = document.getElementById("brand");
   const parentSel = document.getElementById("parent");
   const subSel = document.getElementById("subcategory");
   const classSel = document.getElementById("classification");
 
-  brandSel.length = 1;
-  parentSel.length = 1;
-  subSel.length = 1;
-  classSel.length = 1;
+  const remember = {
+    brand: brandSel.value,
+    parent: parentSel.value,
+    subcategory: subSel.value,
+    classification: classSel.value
+  };
 
-  uniqueSorted(rows.map(r=>r.brand)).forEach(v=> brandSel.add(new Option(v, v)));
-  uniqueSorted(rows.map(r=>r.parent)).forEach(v=> parentSel.add(new Option(v, v)));
-  uniqueSorted(rows.map(r=>r.subcategory)).forEach(v=> subSel.add(new Option(v, v)));
+  setSelectOptions(brandSel, uniqueSorted(rows.map(r=>r.brand)), remember.brand);
+  setSelectOptions(parentSel, uniqueSorted(rows.map(r=>r.parent)), remember.parent);
 
-  const classes = uniqueSorted(rows.map(r=>r.classification));
-  sortClassificationOptions(classes).forEach(v=> classSel.add(new Option(v, v)));
+  const classes = sortClassificationOptions(uniqueSorted(rows.map(r=>r.classification)));
+  setSelectOptions(classSel, classes, remember.classification);
 
-  if (remember.brand) brandSel.value = remember.brand;
-  if (remember.parent) parentSel.value = remember.parent;
-  if (remember.subcategory) subSel.value = remember.subcategory;
-  if (remember.classification) classSel.value = remember.classification;
+  if (!parentSel.value){
+    setSelectPlaceholder(subSel, "Subcategory (select category first)");
+    enableSelect(subSel, false);
+  } else {
+    const subs = uniqueSorted(rows.filter(r=>r.parent === parentSel.value).map(r=>r.subcategory));
+    setSelectOptions(subSel, subs, remember.subcategory);
+    enableSelect(subSel, true);
+    if (remember.subcategory && !subs.includes(remember.subcategory)) subSel.value = "";
+  }
 }
 
 function populateTableFilters(){
-  const remember = {
-    b: document.getElementById("tableBrand").value,
-    p: document.getElementById("tableParent").value,
-    s: document.getElementById("tableSubcategory").value,
-    c: document.getElementById("tableClassification").value
-  };
-
   const bSel = document.getElementById("tableBrand");
   const pSel = document.getElementById("tableParent");
   const sSel = document.getElementById("tableSubcategory");
   const cSel = document.getElementById("tableClassification");
 
-  bSel.length = 1;
-  pSel.length = 1;
-  sSel.length = 1;
-  cSel.length = 1;
+  const remember = {
+    b: bSel.value,
+    p: pSel.value,
+    s: sSel.value,
+    c: cSel.value
+  };
 
-  uniqueSorted(rows.map(r=>r.brand)).forEach(v=> bSel.add(new Option(v, v)));
-  uniqueSorted(rows.map(r=>r.parent)).forEach(v=> pSel.add(new Option(v, v)));
-  uniqueSorted(rows.map(r=>r.subcategory)).forEach(v=> sSel.add(new Option(v, v)));
+  setSelectOptions(bSel, uniqueSorted(rows.map(r=>r.brand)), remember.b);
+  setSelectOptions(pSel, uniqueSorted(rows.map(r=>r.parent)), remember.p);
 
-  const classes = uniqueSorted(rows.map(r=>r.classification));
-  sortClassificationOptions(classes).forEach(v=> cSel.add(new Option(v, v)));
+  const classes = sortClassificationOptions(uniqueSorted(rows.map(r=>r.classification)));
+  setSelectOptions(cSel, classes, remember.c);
 
-  if (remember.b) bSel.value = remember.b;
-  if (remember.p) pSel.value = remember.p;
-  if (remember.s) sSel.value = remember.s;
-  if (remember.c) cSel.value = remember.c;
+  if (!pSel.value){
+    setSelectPlaceholder(sSel, "Subcategory (select category first)");
+    enableSelect(sSel, false);
+  } else {
+    const subs = uniqueSorted(rows.filter(r=>r.parent === pSel.value).map(r=>r.subcategory));
+    setSelectOptions(sSel, subs, remember.s);
+    enableSelect(sSel, true);
+    if (remember.s && !subs.includes(remember.s)) sSel.value = "";
+  }
 }
 
 /* ========= Aggregations ========= */
@@ -781,6 +805,8 @@ function resetFilters(){
   tableSortDir = "desc";
   updateSortHeaderUI();
 
+  populateTopFilters();
+  populateTableFilters();
   refresh();
 }
 
@@ -792,14 +818,24 @@ function bind(){
 
   document.getElementById("reset").addEventListener("click", resetFilters);
 
-  ["q","brand","parent","subcategory","classification"].forEach(id=>{
+  ["q","brand","classification"].forEach(id=>{
     document.getElementById(id).addEventListener("input", debounce(refresh, 140));
     document.getElementById(id).addEventListener("change", debounce(refresh, 140));
   });
 
+  // Parent -> Subcategory dependency (top)
+  document.getElementById("parent").addEventListener("change", ()=>{
+    document.getElementById("subcategory").value = "";
+    populateTopFilters();
+    refresh();
+  });
+
+  // Subcategory itself (top)
+  document.getElementById("subcategory").addEventListener("change", debounce(refresh, 140));
+
   [
     "tableSearch","onlySelling",
-    "tableBrand","tableParent","tableSubcategory","tableClassification",
+    "tableBrand","tableClassification",
     "minStockValue","maxStockValue","tableLimit"
   ].forEach(id=>{
     const el = document.getElementById(id);
@@ -807,8 +843,26 @@ function bind(){
     el.addEventListener("change", debounce(refresh, 140));
   });
 
+  // Parent -> Subcategory dependency (table)
+  document.getElementById("tableParent").addEventListener("change", ()=>{
+    document.getElementById("tableSubcategory").value = "";
+    populateTableFilters();
+    refresh();
+  });
+
+  // Subcategory itself (table)
+  document.getElementById("tableSubcategory").addEventListener("change", debounce(refresh, 140));
+
+  // These should still refresh on change
+  document.getElementById("tableBrand").addEventListener("change", debounce(refresh, 140));
+  document.getElementById("tableClassification").addEventListener("change", debounce(refresh, 140));
+
   bindTableHeaderSorting();
   updateSortHeaderUI();
+
+  // Initialise dropdown disabled states at boot
+  enableSelect(document.getElementById("subcategory"), false);
+  enableSelect(document.getElementById("tableSubcategory"), false);
 }
 
 /* ========= Boot ========= */

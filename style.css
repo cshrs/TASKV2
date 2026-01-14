@@ -390,6 +390,10 @@ tbody tr:hover{ background: rgba(255,139,0,0.08); }
   background: rgba(255,139,0,0.12);
 }
 
+select:disabled{
+  filter: grayscale(0.2);
+}
+
 @media (max-width: 1180px){
   .kpis{ grid-template-columns: repeat(3, minmax(0,1fr)); }
   .grid{ grid-template-columns: 1fr; }
