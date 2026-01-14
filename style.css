@@ -66,7 +66,6 @@ body{
   color: var(--text);
   min-width: 190px;
 }
-
 .controls select{ min-width: 175px; }
 
 .file{
@@ -117,7 +116,6 @@ body{
   grid-template-columns: repeat(2, minmax(0,1fr));
   gap: 12px;
 }
-
 .card{
   background: var(--card);
   border: 1px solid var(--cardBorder);
@@ -125,7 +123,6 @@ body{
   border-radius: var(--radius);
   padding: 14px;
 }
-
 .card h2{ margin: 0 0 6px 2px; font-size: 14px; }
 .subtle{ margin: 0 0 10px 2px; color: var(--muted); font-size: 12px; }
 
@@ -142,7 +139,7 @@ body{
   background: rgba(255,255,255,0.78);
 }
 
-table{ width: 100%; border-collapse: collapse; min-width: 1700px; }
+table{ width: 100%; border-collapse: collapse; min-width: 1750px; }
 thead th{
   position: sticky;
   top: 0;

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Sales and Profit Dashboard</title>
+  <title>Sales, Stock and Profit Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <link rel="stylesheet" href="style.css" />
@@ -16,8 +16,8 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="title">
-        <h1>Sales and Profit Dashboard</h1>
-        <p>Searchable insights across sales TY, sales LY, revenue, profit, pricing and stock.</p>
+        <h1>Sales, Stock and Profit Dashboard</h1>
+        <p>Auto loads MakitaExport.csv. Search SKUs and compare Sales TY, Sales LY, Revenue, Profit and Stock.</p>
       </div>
 
       <div class="controls">
@@ -39,20 +39,20 @@
         </select>
 
         <select id="unitsMode">
-          <option value="ty" selected>Units mode: This Year</option>
-          <option value="ly">Units mode: Last Year</option>
+          <option value="ty" selected>Units axis: This Year</option>
+          <option value="ly">Units axis: Last Year</option>
         </select>
 
         <select id="sort">
-          <option value="gpDesc" selected>Sort: Gross Profit (desc)</option>
-          <option value="revDesc">Revenue (desc)</option>
+          <option value="gpDesc" selected>Sort table: Gross Profit TY (desc)</option>
+          <option value="revDesc">Revenue TY (desc)</option>
           <option value="unitsTyDesc">Units TY (desc)</option>
           <option value="unitsLyDesc">Units LY (desc)</option>
-          <option value="profitPctDesc">Profit % (desc)</option>
-          <option value="discountDesc">Discount % (desc)</option>
           <option value="stockValueDesc">Stock Value (desc)</option>
           <option value="coverDesc">Weeks Cover (desc)</option>
           <option value="coverAsc">Weeks Cover (asc)</option>
+          <option value="profitPctDesc">Profit % (desc)</option>
+          <option value="discountDesc">Discount % (desc)</option>
         </select>
 
         <button id="reset" class="btn" type="button">Reset</button>
@@ -77,7 +77,7 @@
       </div>
 
       <div class="card">
-        <h2>Revenue and Gross Profit by Brand (Top 12)</h2>
+        <h2>Revenue TY and Gross Profit TY by Brand (Top 12)</h2>
         <div class="chart" id="brandRevGp"></div>
       </div>
     </section>
@@ -85,32 +85,45 @@
     <section class="grid">
       <div class="card">
         <h2>Stock Value vs Units (Bubble: Available Stock)</h2>
-        <p class="subtle">Colour by brand. Uses Units mode selector (TY or LY).</p>
+        <p class="subtle">Colour by brand. Units axis uses the selector (TY or LY).</p>
         <div class="chart" id="stockVsUnits"></div>
       </div>
 
       <div class="card">
-        <h2>Discount vs Profit % (Colour: Best Seller Status)</h2>
-        <p class="subtle">Discount % only calculated when a Sale Price exists.</p>
-        <div class="chart" id="discountVsProfit"></div>
+        <h2>Weeks of Cover Distribution</h2>
+        <p class="subtle">Cover uses Available Stock and Units TY annualised (capped at 260 weeks).</p>
+        <div class="chart" id="coverHist"></div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Profit % Distribution</h2>
-        <div class="chart" id="profitHist"></div>
+        <h2>Discount vs Profit % (Colour: Status)</h2>
+        <p class="subtle">Discount only calculated when a Sale Price exists.</p>
+        <div class="chart" id="discountVsProfit"></div>
       </div>
 
       <div class="card">
-        <h2>Status Contribution (Revenue TY)</h2>
+        <h2>Status Share (Revenue TY)</h2>
         <div class="chart" id="statusShare"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>TY vs LY Units by Status (Top 12)</h2>
+        <div class="chart" id="statusUnitsTyLy"></div>
+      </div>
+
+      <div class="card">
+        <h2>Top SKUs by Gross Profit TY (Top 20)</h2>
+        <div class="chart" id="topSkuGP"></div>
       </div>
     </section>
 
     <section class="card table-card">
       <div class="table-head">
-        <h2>SKU Table (searchable)</h2>
+        <h2>SKU Explorer</h2>
         <div class="table-meta" id="tableMeta">–</div>
       </div>
 
@@ -131,7 +144,7 @@
       </div>
 
       <p class="note">
-        Revenue TY uses Sale Price if present and >0, else Selling Price ex VAT.
+        Revenue TY uses Sale Price (if >0) else Selling Price ex VAT.
         Gross Profit TY uses (effective sell ex VAT - cost ex VAT) × Units TY.
       </p>
     </section>

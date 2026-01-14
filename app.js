@@ -1,5 +1,5 @@
 /* ========= Configuration ========= */
-const BUILT_IN_CSV = "MakitaExport.csv"; // change to your committed file name
+const BUILT_IN_CSV = "MakitaExport.csv";
 
 /* ========= Plotly theme ========= */
 const baseLayout = {
@@ -38,6 +38,7 @@ function fmtPct(n){
 const sum = arr => arr.reduce((s,v)=> s + (Number.isFinite(v) ? v : 0), 0);
 const clamp = (v,min,max)=> Math.max(min, Math.min(max, v));
 const debounce = (fn,ms=160)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+
 function chartHeight(id){
   return document.getElementById(id)?.clientHeight || 460;
 }
@@ -88,12 +89,11 @@ async function loadFromPath(path){
   hydrate(await parseCSVText(await r.text()));
 }
 
-/* ========= Hydrate (expects the same headers as MakitaExport export) ========= */
+/* ========= Hydrate ========= */
 function hydrate(rawRows){
   const nonEmpty = (rawRows || []).filter(r => Object.values(r).some(v => String(v ?? "").trim() !== ""));
 
   rows = nonEmpty.map(r=>{
-    // Focus set: T to AE
     const costEx = toNumber(r["Cost Price ex VAT"]);
     const sellEx = toNumber(r["Selling Price ex VAT"]);
     const sale = toNumber(r["Sale Price"]);
@@ -113,7 +113,6 @@ function hydrate(rawRows){
       : NaN;
 
     const revenueTy = (Number.isFinite(unitsTy) && Number.isFinite(effectiveSellEx)) ? unitsTy * effectiveSellEx : NaN;
-
     const gpPerUnit = (Number.isFinite(effectiveSellEx) && Number.isFinite(costEx)) ? (effectiveSellEx - costEx) : NaN;
     const grossProfitTy = (Number.isFinite(unitsTy) && Number.isFinite(gpPerUnit)) ? unitsTy * gpPerUnit : NaN;
 
@@ -194,11 +193,11 @@ function sortItems(items, mode){
   else if (mode === "revDesc") copy.sort((a,b)=> safe(b.revenueTy) - safe(a.revenueTy));
   else if (mode === "unitsTyDesc") copy.sort((a,b)=> safe(b.unitsTy) - safe(a.unitsTy));
   else if (mode === "unitsLyDesc") copy.sort((a,b)=> safe(b.unitsLy) - safe(a.unitsLy));
-  else if (mode === "profitPctDesc") copy.sort((a,b)=> safe(b.profitPct) - safe(a.profitPct));
-  else if (mode === "discountDesc") copy.sort((a,b)=> safe(b.discountPct) - safe(a.discountPct));
   else if (mode === "stockValueDesc") copy.sort((a,b)=> safe(b.stockValue) - safe(a.stockValue));
   else if (mode === "coverDesc") copy.sort((a,b)=> safe(b.weeksCover) - safe(a.weeksCover));
   else if (mode === "coverAsc") copy.sort((a,b)=> safePos(a.weeksCover) - safePos(b.weeksCover));
+  else if (mode === "profitPctDesc") copy.sort((a,b)=> safe(b.profitPct) - safe(a.profitPct));
+  else if (mode === "discountDesc") copy.sort((a,b)=> safe(b.discountPct) - safe(a.discountPct));
 
   return copy;
 }
@@ -218,7 +217,7 @@ function populateFilters(){
 }
 
 /* ========= Aggregations ========= */
-function byBrand(items){
+function aggByBrand(items){
   const m = new Map();
   for (const r of items){
     const k = r.brand || "Unknown";
@@ -231,7 +230,20 @@ function byBrand(items){
   }
   return [...m.values()].sort((a,b)=> b.rev - a.rev);
 }
-function byStatus(items){
+
+function aggByStatusUnits(items){
+  const m = new Map();
+  for (const r of items){
+    const k = r.status || "Unknown";
+    if (!m.has(k)) m.set(k, { k, ty:0, ly:0 });
+    const o = m.get(k);
+    o.ty += Number.isFinite(r.unitsTy) ? r.unitsTy : 0;
+    o.ly += Number.isFinite(r.unitsLy) ? r.unitsLy : 0;
+  }
+  return [...m.values()].sort((a,b)=> b.ty - a.ty);
+}
+
+function aggByStatusRevenue(items){
   const m = new Map();
   for (const r of items){
     const k = r.status || "Unknown";
@@ -239,6 +251,7 @@ function byStatus(items){
   }
   return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
 }
+
 function topNWithOtherPairs(rows2, n=10){
   if (rows2.length <= n) return rows2;
   const top = rows2.slice(0,n);
@@ -249,7 +262,7 @@ function topNWithOtherPairs(rows2, n=10){
 
 /* ========= Charts ========= */
 function drawBrandUnitsTyLy(items){
-  const rows2 = byBrand(items).slice(0,12);
+  const rows2 = aggByBrand(items).slice(0,12);
   const labels = rows2.map(x=>x.k);
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
@@ -279,7 +292,7 @@ function drawBrandUnitsTyLy(items){
 }
 
 function drawBrandRevGp(items){
-  const rows2 = byBrand(items).slice(0,12);
+  const rows2 = aggByBrand(items).slice(0,12);
   const labels = rows2.map(x=>x.k);
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
@@ -301,7 +314,7 @@ function drawBrandRevGp(items){
       hovertemplate:"%{x}<br>Gross profit: £%{y:,.0f}<extra></extra>"
     }
   ], {
-    title:"Revenue and Gross Profit by Brand (Top 12)",
+    title:"Revenue TY and Gross Profit TY by Brand (Top 12)",
     barmode:"group",
     xaxis:{ automargin:true },
     yaxis:{ title:"£" }
@@ -320,8 +333,8 @@ function drawStockVsUnits(items){
   for (const r of items){
     const units = mode === "ly" ? r.unitsLy : r.unitsTy;
     const sv = r.stockValue;
-
     if (!Number.isFinite(sv)) continue;
+
     x.push(Number.isFinite(units) ? units : 0);
     y.push(sv);
 
@@ -335,8 +348,10 @@ function drawStockVsUnits(items){
       `<br>Brand: ${r.brand}` +
       `<br>Status: ${r.status}` +
       `<br>Units TY: ${fmtInt(r.unitsTy)} Units LY: ${fmtInt(r.unitsLy)}` +
+      `<br>Revenue TY: ${fmtGBP(r.revenueTy)}` +
+      `<br>GP TY: ${fmtGBP(r.grossProfitTy)}` +
       `<br>Stock Value: ${fmtGBP(r.stockValue)}` +
-      `<br>Available: ${fmtInt(r.avail)} Supplier: ${fmtInt(r.supplier)}`
+      `<br>Available: ${fmtInt(r.avail)} Supplier: ${fmtInt(r.supplier)} On order: ${r.onOrder ? "Yes" : "No"}`
     );
   }
 
@@ -351,6 +366,23 @@ function drawStockVsUnits(items){
     title:"Stock Value vs Units (Bubble: Available Stock)",
     xaxis:{ title: mode === "ly" ? "Units (Last Year)" : "Units (This Year)", rangemode:"tozero" },
     yaxis:{ title:"Stock Value (£)", rangemode:"tozero" }
+  });
+}
+
+function drawCoverHist(items){
+  const vals = items
+    .map(r=>r.weeksCover)
+    .filter(v=>Number.isFinite(v) && v >= 0 && v <= 260);
+
+  safePlot("coverHist", [{
+    type:"histogram",
+    x: vals,
+    nbinsx: 40,
+    hovertemplate:"Weeks cover: %{x:.1f}<extra></extra>"
+  }], {
+    title:"Weeks of Cover Distribution",
+    xaxis:{ title:"Weeks of cover (capped at 260)" },
+    yaxis:{ title:"SKUs" }
   });
 }
 
@@ -385,28 +417,14 @@ function drawDiscountVsProfit(items){
     hoverinfo:"text",
     marker:{ color: colour, opacity: 0.70 }
   }], {
-    title:"Discount vs Profit % (Colour: Best Seller Status)",
+    title:"Discount vs Profit % (Colour: Status)",
     xaxis:{ title:"Discount %", zeroline:true },
     yaxis:{ title:"Profit % per unit", rangemode:"tozero" }
   });
 }
 
-function drawProfitHist(items){
-  const vals = items.map(r=>r.profitPct).filter(v=>Number.isFinite(v));
-  safePlot("profitHist", [{
-    type:"histogram",
-    x: vals,
-    nbinsx: 30,
-    hovertemplate:"Profit %: %{x}<extra></extra>"
-  }], {
-    title:"Profit % Distribution",
-    xaxis:{ title:"Profit % per unit" },
-    yaxis:{ title:"SKUs" }
-  });
-}
-
 function drawStatusShare(items){
-  const rows2 = topNWithOtherPairs(byStatus(items), 10);
+  const rows2 = topNWithOtherPairs(aggByStatusRevenue(items), 10);
   safePlot("statusShare", [{
     type:"pie",
     labels: rows2.map(x=>x.k),
@@ -415,11 +433,47 @@ function drawStatusShare(items){
     textinfo:"label+percent",
     marker:{ colors: rows2.map(x=> statusColour.get(x.k) || "#bbb") }
   }], {
-    title:"Status Contribution (Revenue TY)"
+    title:"Status Share (Revenue TY)"
   });
 }
 
-/* ========= KPIs and table ========= */
+function drawStatusUnitsTyLy(items){
+  const rows2 = aggByStatusUnits(items).slice(0,12);
+  const labels = rows2.map(x=>x.k);
+  const colours = labels.map(s=> statusColour.get(s) || "#bbb");
+
+  safePlot("statusUnitsTyLy", [
+    { type:"bar", name:"Units TY", x:labels, y:rows2.map(x=>x.ty), marker:{ color: colours, opacity: 0.80 } },
+    { type:"bar", name:"Units LY", x:labels, y:rows2.map(x=>x.ly), marker:{ color: colours, opacity: 0.45 } }
+  ], {
+    title:"TY vs LY Units by Status (Top 12)",
+    barmode:"group",
+    xaxis:{ automargin:true },
+    yaxis:{ title:"Units" }
+  });
+}
+
+function drawTopSkuGP(items){
+  const top = items
+    .map(r=>({ label: `${r.sku} | ${r.name}`.slice(0, 70), v: r.grossProfitTy, brand: r.brand }))
+    .filter(x=>Number.isFinite(x.v) && x.v > 0)
+    .sort((a,b)=> b.v - a.v)
+    .slice(0, 20);
+
+  safePlot("topSkuGP", [{
+    type:"bar",
+    x: top.map(t=>t.label),
+    y: top.map(t=>t.v),
+    marker:{ color: top.map((t,i)=> brandColour.get(t.brand) || BRAND_PALETTE[i % BRAND_PALETTE.length]) },
+    hovertemplate:"£%{y:,.0f}<extra></extra>"
+  }], {
+    title:"Top SKUs by Gross Profit TY (Top 20)",
+    xaxis:{ automargin:true, showticklabels:false },
+    yaxis:{ title:"£" }
+  });
+}
+
+/* ========= KPIs + table ========= */
 function renderKpis(items){
   document.getElementById("kpiProducts").textContent = items.length.toLocaleString("en-GB");
 
@@ -476,14 +530,19 @@ function renderTable(items){
 /* ========= Refresh ========= */
 function refresh(){
   const items = applyFilters();
+
   renderKpis(items);
 
   drawBrandUnitsTyLy(items);
   drawBrandRevGp(items);
   drawStockVsUnits(items);
+  drawCoverHist(items);
+
   drawDiscountVsProfit(items);
-  drawProfitHist(items);
   drawStatusShare(items);
+  drawStatusUnitsTyLy(items);
+
+  drawTopSkuGP(items);
 
   renderTable(items);
 }
