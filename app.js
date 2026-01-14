@@ -1,5 +1,5 @@
 /* ========= Configuration ========= */
-const BUILT_IN_CSV = "OVER.csv"; // change to your committed file name
+const BUILT_IN_CSV = "MakitaExport.csv"; // change to your committed file name
 
 /* ========= Plotly theme ========= */
 const baseLayout = {
