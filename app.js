@@ -3,9 +3,9 @@ const BUILT_IN_CSV = "MakitaExport.csv";
 
 /* ========= Plotly theme ========= */
 const baseLayout = {
-  paper_bgcolor: "rgba(255,255,255,0)",
-  plot_bgcolor: "rgba(255,255,255,0)",
-  font: { family: "Inter, system-ui, Segoe UI, Arial, sans-serif", color: "#1f2530" },
+  paper_bgcolor: "rgba(0,0,0,0)",
+  plot_bgcolor: "rgba(0,0,0,0)",
+  font: { family: "Inter, system-ui, Segoe UI, Arial, sans-serif", color: "#ece6d5" },
   margin: { t: 56, l: 64, r: 18, b: 60 }
 };
 
@@ -64,7 +64,7 @@ function sortClassificationOptions(values){
   arr.sort((a,b)=>{
     const ar = gradeRank(a);
     const br = gradeRank(b);
-    if (ar != null && br != null) return br - ar;           // higher grade first
+    if (ar != null && br != null) return br - ar;
     if (ar != null && br == null) return -1;
     if (ar == null && br != null) return 1;
     return String(a).localeCompare(String(b), "en-GB", { sensitivity: "base" });
@@ -77,13 +77,17 @@ const BRAND_PALETTE = ["#6aa6ff","#ff9fb3","#90e0c5","#ffd08a","#c9b6ff","#8fd3f
 
 /* Classification colours */
 const CLASSIFICATION_COLOURS = {
-  "Best Seller": "#90e0c5",
+  "A+": "#ff8b00",
+  "A": "#90e0c5",
+  "B": "#6aa6ff",
+  "C": "#ffd08a",
+  "D": "#ff9fb3",
   "Core": "#6aa6ff",
   "Seasonal": "#ffd08a",
   "New": "#c9b6ff",
   "Slow": "#ff9fb3",
   "Discontinued": "#a4b0ff",
-  "Unknown": "#cbd5e1"
+  "Unknown": "#d9dbdf"
 };
 const CLASSIFICATION_FALLBACK = ["#90e0c5","#6aa6ff","#ffd08a","#c9b6ff","#ff9fb3","#b2e1a1","#8fd3ff","#ffc6a8","#a4b0ff"];
 
@@ -110,14 +114,14 @@ function buildColourMaps(items){
 
 function hexToRgba(hex, alpha){
   const h = String(hex || "").replace("#","");
-  if (h.length !== 6) return `rgba(203,213,225,${alpha})`;
+  if (h.length !== 6) return `rgba(217,219,223,${alpha})`;
   const r = parseInt(h.slice(0,2),16);
   const g = parseInt(h.slice(2,4),16);
   const b = parseInt(h.slice(4,6),16);
   return `rgba(${r},${g},${b},${alpha})`;
 }
 function pillHTML(label, colour){
-  const col = colour || "#cbd5e1";
+  const col = colour || "#d9dbdf";
   const bg = hexToRgba(col, 0.22);
   return `<span class="pill" style="background:${bg};">
     <span class="pill-dot" style="background:${col};"></span>
@@ -127,8 +131,6 @@ function pillHTML(label, colour){
 
 /* ========= State ========= */
 let rows = [];
-
-/* table sorting state */
 let tableSortKey = "";
 let tableSortDir = "desc";
 
@@ -171,13 +173,15 @@ function pickStockValue(r){
   return NaN;
 }
 
+/* Use Sub Category 1 explicitly for SKU Explorer filters */
 function pickSubcategory(r){
   const candidates = [
-    "Subcategory",
+    "Sub Category 1",
+    "Subcategory 1",
+    "Sub Category1",
     "Sub Category",
-    "Sub Category Name",
-    "Sub-Category",
-    "Sub Category (Name)"
+    "Sub Category 1 ",
+    "Sub Category 1 Name"
   ];
   for (const c of candidates){
     if (c in r){
@@ -274,7 +278,7 @@ function getFilters(){
 
 function applyTopFilters(){
   const f = getFilters();
-  const out = rows.filter(r=>{
+  return rows.filter(r=>{
     if (f.brand && r.brand !== f.brand) return false;
     if (f.parent && r.parent !== f.parent) return false;
     if (f.subcategory && r.subcategory !== f.subcategory) return false;
@@ -286,8 +290,6 @@ function applyTopFilters(){
     }
     return true;
   });
-
-  return out;
 }
 
 function applyTableFilters(items){
@@ -459,8 +461,8 @@ function drawBrandUnitsThisYearLastYear(items){
   ], {
     title:"Units Sold This Year vs Last Year by Brand (Top 12)",
     barmode:"group",
-    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels },
-    yaxis:{ title:"Units" }
+    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels, gridcolor:"rgba(217,219,223,0.12)", zerolinecolor:"rgba(217,219,223,0.12)" },
+    yaxis:{ title:"Units", gridcolor:"rgba(217,219,223,0.12)", zerolinecolor:"rgba(217,219,223,0.12)" }
   });
 }
 
@@ -470,13 +472,13 @@ function drawBrandRevProfit(items){
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
   safePlot("brandRevProfit", [
-    { type:"bar", name:"Revenue this year", x:labels, y:rows2.map(x=>x.revenue), marker:{ color: colours, opacity: 0.72 } },
+    { type:"bar", name:"Revenue this year", x:labels, y:rows2.map(x=>x.revenue), marker:{ color: colours, opacity: 0.70 } },
     { type:"bar", name:"Profit this year", x:labels, y:rows2.map(x=>x.profit), marker:{ color: colours, opacity: 0.95 } }
   ], {
     title:"Revenue and Profit This Year by Brand (Top 12)",
     barmode:"group",
-    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels },
-    yaxis:{ title:"£" }
+    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels, gridcolor:"rgba(217,219,223,0.12)" },
+    yaxis:{ title:"£", gridcolor:"rgba(217,219,223,0.12)" }
   });
 }
 
@@ -499,12 +501,12 @@ function drawStockValueByClassification(items){
     type:"bar",
     x: labels,
     y: rows2.map(x=>x.v),
-    marker:{ color: rows2.map(x => classificationColour.get(x.k) || "#cbd5e1"), opacity: 0.92 },
+    marker:{ color: rows2.map(x => classificationColour.get(x.k) || "#d9dbdf"), opacity: 0.92 },
     hovertemplate:"<b>%{x}</b><br>Stock value: £%{y:,.0f}<extra></extra>"
   }], {
     title:"Stock Value by Classification",
-    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels },
-    yaxis:{ title:"£" }
+    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels, gridcolor:"rgba(217,219,223,0.12)" },
+    yaxis:{ title:"£", gridcolor:"rgba(217,219,223,0.12)" }
   });
 }
 
@@ -524,11 +526,11 @@ function drawDiscountBandsUnits(items){
     x: rows2.map(x=>x.band),
     y: rows2.map(x=>x.units),
     hovertemplate:"%{x}<br>Units sold this year: %{y:,.0f}<extra></extra>",
-    marker:{ opacity: 0.85 }
+    marker:{ opacity: 0.85, color:"#ff8b00" }
   }], {
     title:"Discount Bands vs Units Sold This Year",
-    xaxis:{ automargin:true },
-    yaxis:{ title:"Units sold this year" }
+    xaxis:{ automargin:true, gridcolor:"rgba(217,219,223,0.12)" },
+    yaxis:{ title:"Units sold this year", gridcolor:"rgba(217,219,223,0.12)" }
   });
 }
 
@@ -540,14 +542,14 @@ function drawClassificationShare(items){
     values: rows2.map(x=>x.v),
     hole: 0.45,
     textinfo:"label+percent",
-    marker:{ colors: rows2.map(x=> classificationColour.get(x.k) || "#cbd5e1") }
+    marker:{ colors: rows2.map(x=> classificationColour.get(x.k) || "#d9dbdf") }
   }], { title:"Classification Share (Revenue This Year)" });
 }
 
 function drawClassificationUnitsThisYearLastYear(items){
   const rows2 = aggByClassificationUnits(items).slice(0,12);
   const labels = rows2.map(x=>x.k);
-  const colours = labels.map(s=> classificationColour.get(s) || "#cbd5e1");
+  const colours = labels.map(s=> classificationColour.get(s) || "#d9dbdf");
 
   safePlot("classificationUnitsThisYearLastYear", [
     { type:"bar", name:"Units sold this year", x:labels, y:rows2.map(x=>x.thisYear), marker:{ color: colours, opacity: 0.82 } },
@@ -555,8 +557,8 @@ function drawClassificationUnitsThisYearLastYear(items){
   ], {
     title:"Units Sold This Year vs Last Year by Classification (Top 12)",
     barmode:"group",
-    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels },
-    yaxis:{ title:"Units" }
+    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels, gridcolor:"rgba(217,219,223,0.12)" },
+    yaxis:{ title:"Units", gridcolor:"rgba(217,219,223,0.12)" }
   });
 }
 
@@ -588,8 +590,8 @@ function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
     hoverinfo: "text"
   }], {
     title,
-    xaxis:{ title: isMoney ? "£" : "Units" },
-    yaxis:{ automargin:true, autorange:"reversed" },
+    xaxis:{ title: isMoney ? "£" : "Units", gridcolor:"rgba(217,219,223,0.12)" },
+    yaxis:{ automargin:true, autorange:"reversed", gridcolor:"rgba(217,219,223,0.06)" },
     margin: { t: 56, l: 180, r: 18, b: 60 }
   });
 }
@@ -704,6 +706,7 @@ function renderTable(items){
     tr.innerHTML = `
       <td>${r.sku}</td>
       <td>${r.name}</td>
+
       <td>${brandPill}</td>
       <td>${r.parent}</td>
       <td>${r.subcategory}</td>
@@ -712,10 +715,12 @@ function renderTable(items){
       <td>${fmtInt(r.unitsThisYear)}</td>
       <td>${fmtInt(r.unitsLastYear)}</td>
 
+      <td>${fmtInt(r.avail)}</td>
+      <td>${fmtInt(r.supplier)}</td>
+      <td>${fmtGBP(r.stockValue)}</td>
+
       <td>${fmtGBP(r.revenue)}</td>
       <td>${fmtGBP(r.profit)}</td>
-
-      <td>${fmtGBP(r.stockValue)}</td>
 
       <td>${fmtGBP(r.costEx)}</td>
       <td>${fmtGBP(r.sellEx)}</td>
@@ -723,9 +728,6 @@ function renderTable(items){
 
       <td>${fmtPct(r.discountPct)}</td>
       <td>${fmtPct(r.profitPct)}</td>
-
-      <td>${fmtInt(r.avail)}</td>
-      <td>${fmtInt(r.supplier)}</td>
     `;
     tbody.appendChild(tr);
   }
@@ -745,9 +747,7 @@ function refresh(){
   drawBrandUnitsThisYearLastYear(items);
   drawBrandRevProfit(items);
   drawParentRevenueShare(items);
-
   drawStockValueByClassification(items);
-
   drawDiscountBandsUnits(items);
   drawClassificationShare(items);
   drawClassificationUnitsThisYearLastYear(items);

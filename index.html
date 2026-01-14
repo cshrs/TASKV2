@@ -17,7 +17,7 @@
     <div class="topbar-inner">
       <div class="title">
         <h1>Sales, Stock and Profit Dashboard</h1>
-        <p>Auto loads MakitaExport.csv. Filter, search, and explore sales, revenue, profit, and stock value.</p>
+        <p>Auto loads MakitaExport.csv. Filter, search, and explore sales, revenue, profit, and stock.</p>
       </div>
 
       <div class="controls">
@@ -168,6 +168,7 @@
             <tr>
               <th data-key="sku" data-type="text">SKU</th>
               <th data-key="name" data-type="text">Product Name</th>
+
               <th data-key="brand" data-type="text">Brand</th>
               <th data-key="parent" data-type="text">Parent</th>
               <th data-key="subcategory" data-type="text">Subcategory</th>
@@ -176,10 +177,12 @@
               <th data-key="unitsThisYear" data-type="num">Units sold this year</th>
               <th data-key="unitsLastYear" data-type="num">Units sold last year</th>
 
-              <th data-key="revenue" data-type="num">Revenue this year</th>
-              <th data-key="profit" data-type="num">Profit this year</th>
-
+              <th data-key="avail" data-type="num">Available</th>
+              <th data-key="supplier" data-type="num">Supplier</th>
               <th data-key="stockValue" data-type="num">Stock value</th>
+
+              <th data-key="revenue" data-type="num">Revenue this year (units × selling price)</th>
+              <th data-key="profit" data-type="num">Profit this year (selling price basis)</th>
 
               <th data-key="costEx" data-type="num">Cost ex VAT</th>
               <th data-key="sellEx" data-type="num">Selling ex VAT</th>
@@ -187,9 +190,6 @@
 
               <th data-key="discountPct" data-type="num">Discount %</th>
               <th data-key="profitPct" data-type="num">Profit %</th>
-
-              <th data-key="avail" data-type="num">Available</th>
-              <th data-key="supplier" data-type="num">Supplier</th>
             </tr>
           </thead>
           <tbody></tbody>

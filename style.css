@@ -1,17 +1,24 @@
 :root{
-  --bg: #f6f7fb;
-  --text: #1f2530;
-  --muted: rgba(31,37,48,0.70);
+  --dark: #191922;
+  --mid: #24384a;
+  --grey: #d9dbdf;
+  --orange: #ff8b00;
+  --cream: #ece6d5;
 
-  --card: rgba(255,255,255,0.80);
-  --cardBorder: rgba(16,18,22,0.08);
-  --shadow: 0 12px 34px rgba(18,22,33,0.10);
+  --text: var(--cream);
+  --muted: rgba(236,230,213,0.72);
+
+  --card: rgba(36,56,74,0.62);
+  --card2: rgba(25,25,34,0.44);
+  --cardBorder: rgba(217,219,223,0.10);
+  --shadow: 0 14px 44px rgba(0,0,0,0.35);
 
   --radius: 18px;
   --radiusSm: 12px;
 
-  --fieldBg: rgba(255,255,255,0.94);
-  --ring: rgba(106,166,255,0.45);
+  --fieldBg: rgba(25,25,34,0.58);
+  --fieldBorder: rgba(217,219,223,0.14);
+  --ring: rgba(255,139,0,0.35);
 
   --p1: #90e0c5;
   --p2: #6aa6ff;
@@ -28,11 +35,11 @@ body{
   font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(900px 600px at 10% 8%, rgba(144,224,197,0.30), transparent 58%),
-    radial-gradient(900px 600px at 90% 0%, rgba(201,182,255,0.28), transparent 58%),
-    radial-gradient(900px 600px at 80% 78%, rgba(255,208,138,0.25), transparent 58%),
-    radial-gradient(900px 600px at 0% 90%, rgba(106,166,255,0.22), transparent 58%),
-    var(--bg);
+    radial-gradient(900px 620px at 12% 8%, rgba(36,56,74,0.95), transparent 60%),
+    radial-gradient(900px 620px at 88% 12%, rgba(255,139,0,0.18), transparent 62%),
+    radial-gradient(900px 620px at 80% 86%, rgba(217,219,223,0.10), transparent 60%),
+    radial-gradient(900px 620px at 10% 90%, rgba(255,139,0,0.12), transparent 62%),
+    linear-gradient(180deg, var(--dark), #14141c 70%, var(--dark));
 }
 
 .topbar{
@@ -40,7 +47,7 @@ body{
   top: 0;
   z-index: 50;
   backdrop-filter: blur(14px);
-  background: rgba(246,247,251,0.86);
+  background: rgba(25,25,34,0.72);
   border-bottom: 1px solid var(--cardBorder);
 }
 
@@ -76,26 +83,40 @@ body{
 }
 
 .controls input[type="search"], .controls select{
-  border: 1px solid var(--cardBorder);
+  border: 1px solid var(--fieldBorder);
   background: var(--fieldBg);
   padding: 10px 12px;
   border-radius: var(--radiusSm);
   outline: none;
   color: var(--text);
   min-width: 180px;
-  box-shadow: 0 4px 14px rgba(18,22,33,0.05);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.25);
 }
 
+.controls input[type="search"]::placeholder{ color: rgba(236,230,213,0.55); }
+
 .controls input[type="search"]:focus, .controls select:focus{
-  box-shadow: 0 0 0 4px var(--ring), 0 4px 16px rgba(18,22,33,0.06);
+  box-shadow: 0 0 0 4px var(--ring), 0 6px 24px rgba(0,0,0,0.30);
+  border-color: rgba(255,139,0,0.45);
+}
+
+.controls select{
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(236,230,213,0.75) 50%),
+    linear-gradient(135deg, rgba(236,230,213,0.75) 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
 }
 
 .file{
   display:inline-flex;
   align-items: center;
   gap: 10px;
-  border: 1px dashed rgba(18,22,33,0.18);
-  background: rgba(255,255,255,0.72);
+  border: 1px dashed rgba(217,219,223,0.22);
+  background: rgba(36,56,74,0.28);
   padding: 10px 12px;
   border-radius: var(--radiusSm);
   cursor: pointer;
@@ -105,16 +126,16 @@ body{
 .file span{ font-size: 12px; color: var(--muted); }
 
 .btn{
-  border: 1px solid var(--cardBorder);
-  background: rgba(255,255,255,0.94);
+  border: 1px solid rgba(255,139,0,0.30);
+  background: rgba(255,139,0,0.12);
   padding: 10px 12px;
   border-radius: var(--radiusSm);
   cursor:pointer;
-  color: var(--text);
-  box-shadow: 0 6px 18px rgba(18,22,33,0.07);
+  color: var(--cream);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.30);
 }
 
-.btn:hover{ filter: brightness(0.985); }
+.btn:hover{ filter: brightness(1.06); }
 .btn:active{ transform: translateY(1px); }
 
 .wrap{
@@ -131,7 +152,7 @@ body{
 }
 
 .kpi{
-  background: var(--card);
+  background: linear-gradient(180deg, rgba(36,56,74,0.74), rgba(25,25,34,0.42));
   border: 1px solid var(--cardBorder);
   box-shadow: var(--shadow);
   border-radius: var(--radius);
@@ -153,7 +174,7 @@ body{
 }
 
 .card{
-  background: var(--card);
+  background: linear-gradient(180deg, rgba(36,56,74,0.72), rgba(25,25,34,0.40));
   border: 1px solid var(--cardBorder);
   box-shadow: var(--shadow);
   border-radius: var(--radius);
@@ -198,19 +219,45 @@ body{
   justify-content: flex-end;
 }
 
-.table-tools input[type="search"]{
-  border: 1px solid var(--cardBorder);
+/* Themed inputs and selects inside SKU Explorer */
+.table-tools input[type="search"],
+.table-tools select,
+.range input,
+.show select{
+  border: 1px solid var(--fieldBorder);
   background: var(--fieldBg);
   padding: 10px 12px;
   border-radius: var(--radiusSm);
   outline: none;
   color: var(--text);
-  min-width: 280px;
-  box-shadow: 0 4px 14px rgba(18,22,33,0.05);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.25);
 }
 
-.table-tools input[type="search"]:focus{
-  box-shadow: 0 0 0 4px var(--ring), 0 4px 16px rgba(18,22,33,0.06);
+.table-tools input[type="search"]::placeholder,
+.range input::placeholder{
+  color: rgba(236,230,213,0.55);
+}
+
+.table-tools input[type="search"]:focus,
+.table-tools select:focus,
+.range input:focus,
+.show select:focus{
+  box-shadow: 0 0 0 4px var(--ring), 0 6px 24px rgba(0,0,0,0.30);
+  border-color: rgba(255,139,0,0.45);
+}
+
+.table-tools input[type="search"]{ min-width: 280px; }
+
+.table-tools select,
+.show select{
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(236,230,213,0.75) 50%),
+    linear-gradient(135deg, rgba(236,230,213,0.75) 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
 }
 
 .range{
@@ -219,20 +266,7 @@ body{
   align-items: center;
 }
 
-.range input{
-  border: 1px solid var(--cardBorder);
-  background: var(--fieldBg);
-  padding: 10px 12px;
-  border-radius: var(--radiusSm);
-  outline: none;
-  color: var(--text);
-  min-width: 160px;
-  box-shadow: 0 4px 14px rgba(18,22,33,0.05);
-}
-
-.range input:focus{
-  box-shadow: 0 0 0 4px var(--ring), 0 4px 16px rgba(18,22,33,0.06);
-}
+.range input{ min-width: 160px; }
 
 .show{
   display:flex;
@@ -240,24 +274,11 @@ body{
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--cardBorder);
-  background: rgba(255,255,255,0.72);
+  background: rgba(36,56,74,0.26);
   border-radius: var(--radiusSm);
 }
 
-.show-label{
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.show select{
-  border: 1px solid var(--cardBorder);
-  background: rgba(255,255,255,0.94);
-  padding: 8px 10px;
-  border-radius: 10px;
-  outline: none;
-  color: var(--text);
-  min-width: 92px;
-}
+.show-label{ font-size: 12px; color: var(--muted); }
 
 .toggle{
   display:flex;
@@ -265,7 +286,7 @@ body{
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--cardBorder);
-  background: rgba(255,255,255,0.72);
+  background: rgba(36,56,74,0.26);
   border-radius: var(--radiusSm);
   font-size: 12px;
   color: var(--muted);
@@ -273,13 +294,13 @@ body{
   user-select: none;
 }
 
-.toggle input{ accent-color: var(--p2); }
+.toggle input{ accent-color: var(--orange); }
 
 .table-wrap{
   overflow:auto;
   border-radius: 14px;
-  border: 1px solid rgba(18,22,33,0.09);
-  background: rgba(255,255,255,0.86);
+  border: 1px solid rgba(217,219,223,0.12);
+  background: rgba(25,25,34,0.35);
   margin-top: 10px;
 }
 
@@ -292,36 +313,40 @@ table{
 thead th{
   position: sticky;
   top: 0;
-  background: rgba(255,255,255,0.98);
-  border-bottom: 1px solid rgba(18,22,33,0.10);
+  background: rgba(25,25,34,0.88);
+  border-bottom: 1px solid rgba(217,219,223,0.14);
   font-size: 12px;
   text-align: left;
   padding: 9px 10px;
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
+  color: var(--cream);
 }
 
-thead th:hover{ background: rgba(144,224,197,0.12); }
+thead th:hover{ background: rgba(255,139,0,0.10); }
 
 thead th.sorted{
-  box-shadow: inset 0 -2px 0 rgba(106,166,255,0.55);
+  box-shadow: inset 0 -2px 0 rgba(255,139,0,0.55);
 }
 
 tbody td{
-  border-bottom: 1px solid rgba(18,22,33,0.06);
+  border-bottom: 1px solid rgba(217,219,223,0.10);
   font-size: 12px;
   padding: 8px 10px;
   white-space: nowrap;
+  color: rgba(236,230,213,0.92);
 }
 
-tbody tr:hover{ background: rgba(144,224,197,0.13); }
+tbody tr:hover{ background: rgba(255,139,0,0.08); }
 
 /* Allow some columns to wrap */
 #tbl td:nth-child(2),
 #tbl th:nth-child(2),
 #tbl td:nth-child(4),
-#tbl th:nth-child(4){
+#tbl th:nth-child(4),
+#tbl td:nth-child(5),
+#tbl th:nth-child(5){
   white-space: normal;
   max-width: 360px;
 }
@@ -337,15 +362,16 @@ tbody tr:hover{ background: rgba(144,224,197,0.13); }
   font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.1px;
-  border: 1px solid rgba(18,22,33,0.10);
+  border: 1px solid rgba(217,219,223,0.16);
   line-height: 1.2;
+  color: rgba(236,230,213,0.95);
 }
 
 .pill-dot{
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgba(18,22,33,0.10);
+  box-shadow: inset 0 0 0 1px rgba(25,25,34,0.25);
 }
 
 /* Sticky SKU column */
@@ -354,14 +380,14 @@ tbody tr:hover{ background: rgba(144,224,197,0.13); }
   position: sticky;
   left: 0;
   z-index: 3;
-  background: rgba(255,255,255,0.98);
-  border-right: 1px solid rgba(18,22,33,0.10);
+  background: rgba(25,25,34,0.92);
+  border-right: 1px solid rgba(217,219,223,0.14);
 }
 
 #tbl thead th:nth-child(1){ z-index: 6; }
 
 #tbl tbody tr:hover td:nth-child(1){
-  background: rgba(144,224,197,0.22);
+  background: rgba(255,139,0,0.12);
 }
 
 @media (max-width: 1180px){
