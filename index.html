@@ -32,12 +32,6 @@
         <select id="parent"><option value="">Parent Category (All)</option></select>
         <select id="status"><option value="">Best Seller Status (All)</option></select>
 
-        <select id="onOrder">
-          <option value="">On Order? (All)</option>
-          <option value="true">Yes</option>
-          <option value="false">No</option>
-        </select>
-
         <select id="unitsMode">
           <option value="thisYear" selected>Units axis: This Year</option>
           <option value="lastYear">Units axis: Last Year</option>
@@ -71,9 +65,11 @@
 
       <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">–</div><div class="kpi-label">Units This Year</div></div>
       <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">–</div><div class="kpi-label">Units Last Year</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiRevenueSaleAware">–</div><div class="kpi-label">Revenue This Year (sale aware, ex VAT)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiGrossProfitSaleAware">–</div><div class="kpi-label">Gross Profit This Year (sale aware)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiRevenueSelling">–</div><div class="kpi-label">Revenue This Year (selling price, ex VAT)</div></div>
+
+      <div class="kpi"><div class="kpi-value" id="kpiRevenueEffective">–</div><div class="kpi-label">Revenue This Year (units × effective price, ex VAT)</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiProfitEffective">–</div><div class="kpi-label">Gross Profit This Year (effective price basis)</div></div>
+
+      <div class="kpi"><div class="kpi-value" id="kpiRevenueSelling">–</div><div class="kpi-label">Revenue This Year (units × selling price, ex VAT)</div></div>
     </section>
 
     <section class="grid">
@@ -83,8 +79,8 @@
       </div>
 
       <div class="card">
-        <h2>Revenue and Gross Profit This Year by Brand (Top 12, sale aware)</h2>
-        <div class="chart" id="brandRevProfitSaleAware"></div>
+        <h2>Revenue and Gross Profit This Year by Brand (Top 12, effective price basis)</h2>
+        <div class="chart" id="brandRevProfitEffective"></div>
       </div>
     </section>
 
@@ -96,48 +92,72 @@
       </div>
 
       <div class="card">
-        <h2>Parent Category Revenue Share (This Year, sale aware)</h2>
+        <h2>Parent Category Revenue Share (This Year, effective price basis)</h2>
         <div class="chart" id="parentRevenueShare"></div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>SKU Profitability Map (This Year, sale aware)</h2>
-        <p class="subtle">Each point is a SKU. X axis is revenue, Y axis is gross profit. Use hover to see details.</p>
-        <div class="chart" id="skuProfitabilityMap"></div>
+        <h2>Discount Bands vs Units This Year</h2>
+        <p class="subtle">Discount only uses rows that have a Sale Price and Selling Price ex VAT.</p>
+        <div class="chart" id="discountBandsUnits"></div>
       </div>
 
       <div class="card">
-        <h2>Discount Bands vs Units This Year (simple, readable)</h2>
-        <p class="subtle">Discount only uses rows that have a Sale Price and Selling Price ex VAT.</p>
-        <div class="chart" id="discountBandsUnits"></div>
+        <h2>Status Share (Revenue This Year, effective price basis)</h2>
+        <div class="chart" id="statusShare"></div>
       </div>
     </section>
 
     <section class="grid">
-      <div class="card">
-        <h2>Status Share (Revenue This Year, sale aware)</h2>
-        <div class="chart" id="statusShare"></div>
-      </div>
-
       <div class="card">
         <h2>Sales This Year vs Last Year by Status (Top 12)</h2>
         <div class="chart" id="statusUnitsThisYearLastYear"></div>
       </div>
+
+      <div class="card">
+        <h2>Top SKUs by Gross Profit This Year (effective price basis)</h2>
+        <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
+        <div class="chart" id="topSkuGrossProfit"></div>
+      </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Top SKUs by Gross Profit This Year (sale aware)</h2>
-        <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
-        <div class="chart" id="topSkuGrossProfit"></div>
-      </div>
-
-      <div class="card">
         <h2>Top SKUs by Revenue This Year (selling price basis)</h2>
         <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
         <div class="chart" id="topSkuRevenueSelling"></div>
+      </div>
+
+      <div class="card">
+        <h2>Top SKUs by Revenue This Year (effective price basis)</h2>
+        <p class="subtle">Uses sale price when present, otherwise selling price ex VAT.</p>
+        <div class="chart" id="topSkuRevenueEffective"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Power Tools: Sales This Year vs Last Year by Brand (Top 10)</h2>
+        <div class="chart" id="powerToolsBrandUnits"></div>
+      </div>
+
+      <div class="card">
+        <h2>Power Tools: Revenue and Gross Profit This Year by Brand (Top 10, effective price basis)</h2>
+        <div class="chart" id="powerToolsBrandRevProfit"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Accessories: Sales This Year vs Last Year by Brand (Top 10)</h2>
+        <div class="chart" id="accessoriesBrandUnits"></div>
+      </div>
+
+      <div class="card">
+        <h2>Accessories: Revenue and Gross Profit This Year by Brand (Top 10, effective price basis)</h2>
+        <div class="chart" id="accessoriesBrandRevProfit"></div>
       </div>
     </section>
 
@@ -164,15 +184,15 @@
               <th>SKU</th><th>Product Name</th><th>Brand</th><th>Parent</th><th>Status</th>
               <th>Units This Year</th><th>Units Last Year</th>
 
-              <th>Revenue This Year (sale aware)</th>
-              <th>Gross Profit This Year (sale aware)</th>
+              <th>Revenue This Year (units × effective price)</th>
+              <th>Gross Profit This Year (effective price basis)</th>
 
-              <th>Revenue This Year (selling price)</th>
-              <th>Profit This Year (selling price)</th>
+              <th>Revenue This Year (units × selling price)</th>
+              <th>Profit This Year (selling price basis)</th>
 
               <th>Cost ex VAT</th><th>Selling ex VAT</th><th>Sale Price</th>
               <th>Discount %</th><th>Profit %</th>
-              <th>Available</th><th>Supplier</th><th>On Order?</th>
+              <th>Available</th><th>Supplier</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -180,8 +200,8 @@
       </div>
 
       <p class="note">
-        Sale aware revenue uses Sale Price when present, otherwise Selling Price ex VAT.
-        Selling price revenue uses Selling Price ex VAT only.
+        Effective price uses Sale Price when present, otherwise Selling Price ex VAT.
+        Selling price basis ignores Sale Price completely.
       </p>
     </section>
   </main>

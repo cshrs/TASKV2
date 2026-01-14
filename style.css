@@ -44,7 +44,7 @@ body{
 }
 
 .topbar-inner{
-  max-width: 1400px;
+  max-width: 1900px;
   margin: 0 auto;
   padding: 14px 16px;
   display:flex;
@@ -62,7 +62,7 @@ body{
   margin: 4px 0 0 0;
   font-size: 12px;
   color: var(--muted);
-  max-width: 860px;
+  max-width: 980px;
 }
 
 .controls{
@@ -114,7 +114,11 @@ body{
 .btn:hover{ filter: brightness(0.985); }
 .btn:active{ transform: translateY(1px); }
 
-.wrap{ max-width: 1400px; margin: 0 auto; padding: 18px 16px 46px 16px; }
+.wrap{
+  max-width: 1900px;
+  margin: 0 auto;
+  padding: 18px 16px 46px 16px;
+}
 
 .kpis{
   display:grid;
@@ -186,7 +190,7 @@ body{
   border-radius: var(--radiusSm);
   outline: none;
   color: var(--text);
-  min-width: 280px;
+  min-width: 320px;
   box-shadow: 0 4px 14px rgba(18,22,33,0.05);
 }
 .table-tools input[type="search"]:focus{
@@ -209,14 +213,14 @@ body{
 .toggle input{ accent-color: var(--p2); }
 
 .table-wrap{
-  overflow:auto;
+  overflow: visible;
   border-radius: 14px;
   border: 1px solid rgba(18,22,33,0.09);
   background: rgba(255,255,255,0.86);
   margin-top: 10px;
 }
 
-table{ width: 100%; border-collapse: collapse; min-width: 1900px; }
+table{ width: 100%; border-collapse: collapse; }
 
 thead th{
   position: sticky;
@@ -265,4 +269,5 @@ tbody tr:hover{ background: rgba(144,224,197,0.13); }
   .table-head{ flex-direction: column; }
   .table-tools{ justify-content: flex-start; }
   .table-tools input[type="search"]{ min-width: 220px; width: 100%; }
+  .table-wrap{ overflow:auto; }
 }
