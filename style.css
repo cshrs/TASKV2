@@ -3,7 +3,7 @@
   --card: rgba(255,255,255,0.72);
   --cardBorder: rgba(20,25,35,0.08);
   --text: #1f2530;
-  --muted: rgba(31,37,48,0.7);
+  --muted: rgba(31,37,48,0.70);
   --shadow: 0 10px 30px rgba(20,25,35,0.10);
   --radius: 18px;
 
@@ -32,12 +32,12 @@ body{
   top: 0;
   z-index: 50;
   backdrop-filter: blur(14px);
-  background: rgba(247,247,251,0.75);
+  background: rgba(247,247,251,0.78);
   border-bottom: 1px solid var(--cardBorder);
 }
 
 .topbar-inner{
-  max-width: 1320px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 14px 16px;
   display:flex;
@@ -55,6 +55,7 @@ body{
   margin: 4px 0 0 0;
   font-size: 12px;
   color: var(--muted);
+  max-width: 780px;
 }
 
 .controls{
@@ -67,22 +68,22 @@ body{
 
 .controls input[type="search"], .controls select{
   border: 1px solid var(--cardBorder);
-  background: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.88);
   padding: 10px 12px;
   border-radius: 12px;
   outline: none;
   color: var(--text);
-  min-width: 200px;
+  min-width: 190px;
 }
 
-.controls select{ min-width: 180px; }
+.controls select{ min-width: 175px; }
 
 .file{
   display:inline-flex;
   align-items: center;
   gap: 10px;
   border: 1px dashed rgba(20,25,35,0.16);
-  background: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.65);
   padding: 10px 12px;
   border-radius: 12px;
   cursor: pointer;
@@ -92,7 +93,7 @@ body{
 
 .btn{
   border: 1px solid var(--cardBorder);
-  background: rgba(255,255,255,0.88);
+  background: rgba(255,255,255,0.90);
   padding: 10px 12px;
   border-radius: 12px;
   cursor:pointer;
@@ -101,9 +102,9 @@ body{
 .btn:hover{ filter: brightness(0.98); }
 
 .wrap{
-  max-width: 1320px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 18px 16px 44px 16px;
+  padding: 18px 16px 46px 16px;
 }
 
 .kpis{
@@ -112,18 +113,21 @@ body{
   gap: 12px;
   margin-top: 10px;
 }
+
 .kpi{
   background: var(--card);
   border: 1px solid var(--cardBorder);
   box-shadow: var(--shadow);
   border-radius: var(--radius);
-  padding: 14px 14px;
-  min-height: 82px;
+  padding: 14px;
+  min-height: 84px;
 }
+
 .kpi-value{
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 750;
 }
+
 .kpi-label{
   margin-top: 8px;
   font-size: 12px;
@@ -146,8 +150,14 @@ body{
 }
 
 .card h2{
-  margin: 0 0 10px 2px;
+  margin: 0 0 6px 2px;
   font-size: 14px;
+}
+
+.subtle{
+  margin: 0 0 10px 2px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .chart{
@@ -156,12 +166,14 @@ body{
 }
 
 .table-card{ margin-top: 12px; }
+
 .table-head{
   display:flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
 }
+
 .table-meta{
   font-size: 12px;
   color: var(--muted);
@@ -171,22 +183,22 @@ body{
   overflow:auto;
   border-radius: 14px;
   border: 1px solid rgba(20,25,35,0.08);
-  background: rgba(255,255,255,0.75);
+  background: rgba(255,255,255,0.78);
 }
 
 table{
   width: 100%;
   border-collapse: collapse;
-  min-width: 1300px;
+  min-width: 1600px;
 }
 thead th{
   position: sticky;
   top: 0;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.96);
   border-bottom: 1px solid rgba(20,25,35,0.10);
   font-size: 12px;
   text-align: left;
-  padding: 10px 10px;
+  padding: 10px;
   white-space: nowrap;
 }
 tbody td{
@@ -196,7 +208,23 @@ tbody td{
   white-space: nowrap;
 }
 tbody tr:hover{
-  background: rgba(144,224,197,0.16);
+  background: rgba(144,224,197,0.14);
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(20,25,35,0.10);
+  font-size: 12px;
+  background: rgba(255,255,255,0.75);
+}
+.dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 99px;
 }
 
 .note{

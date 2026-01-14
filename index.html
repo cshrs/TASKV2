@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Catalogue and Sales Dashboard</title>
+  <title>Best Seller Status Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <link rel="stylesheet" href="style.css" />
@@ -16,8 +16,8 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="title">
-        <h1>Catalogue and Sales Dashboard</h1>
-        <p>Auto loads MakitaExport.csv</p>
+        <h1>Best Seller Status Dashboard</h1>
+        <p>Focus: columns T to AE (pricing, profit, stock, sales, status). Auto loads MakitaExport.csv.</p>
       </div>
 
       <div class="controls">
@@ -26,33 +26,39 @@
           <span>Load different CSV</span>
         </label>
 
-        <input id="skuSearch" type="search" placeholder="Search SKU, Product Name, Product ID" />
+        <input id="q" type="search" placeholder="Search SKU, Product Name, Product ID" />
 
-        <select id="brandFilter">
-          <option value="">Brand (All)</option>
-        </select>
-
-        <select id="parentCatFilter">
-          <option value="">Parent Category (All)</option>
-        </select>
-
-        <select id="subCat1Filter">
-          <option value="">Sub Category 1 (All)</option>
-        </select>
-
-        <select id="bestsellerFilter">
+        <select id="status">
           <option value="">Best Seller Status (All)</option>
         </select>
 
-        <select id="qualityFilter">
-          <option value="">Quality focus (All)</option>
-          <option value="missingPdp">Missing PDP</option>
-          <option value="missingDesc">Not Optimised Description</option>
-          <option value="badFilters">Filters Not Correct</option>
-          <option value="lowImages">Low Images (0 or 1)</option>
+        <select id="brand">
+          <option value="">Brand (All)</option>
         </select>
 
-        <button id="resetBtn" class="btn" type="button">Reset</button>
+        <select id="onOrder">
+          <option value="">On Order? (All)</option>
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+
+        <select id="mode">
+          <option value="ytd" selected>Period: This Year (YTD)</option>
+          <option value="ly">Period: Last Year</option>
+        </select>
+
+        <select id="sort">
+          <option value="gpDesc" selected>Sort table: Gross Profit (desc)</option>
+          <option value="revDesc">Revenue (desc)</option>
+          <option value="unitsDesc">Units (desc)</option>
+          <option value="stockValueDesc">Stock Value (desc)</option>
+          <option value="coverDesc">Weeks Cover (desc)</option>
+          <option value="coverAsc">Weeks Cover (asc)</option>
+          <option value="profitPctDesc">Profit % (desc)</option>
+          <option value="discountDesc">Discount % (desc)</option>
+        </select>
+
+        <button id="reset" class="btn" type="button">Reset</button>
       </div>
     </div>
   </header>
@@ -65,110 +71,112 @@
       </div>
 
       <div class="kpi">
+        <div class="kpi-value" id="kpiUnits">–</div>
+        <div class="kpi-label" id="kpiUnitsLabel">Units (This Year)</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-value" id="kpiRevenue">–</div>
+        <div class="kpi-label" id="kpiRevenueLabel">Estimated Revenue (ex VAT)</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-value" id="kpiGP">–</div>
+        <div class="kpi-label">Estimated Gross Profit</div>
+      </div>
+
+      <div class="kpi">
         <div class="kpi-value" id="kpiStockValue">–</div>
         <div class="kpi-label">Stock Value</div>
       </div>
 
       <div class="kpi">
-        <div class="kpi-value" id="kpiUnitsYtd">–</div>
-        <div class="kpi-label">Units Sold This Year</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-value" id="kpiUnitsLy">–</div>
-        <div class="kpi-label">Units Sold Last Year</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-value" id="kpiEstRevYtd">–</div>
-        <div class="kpi-label">Estimated Revenue This Year (ex VAT)</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-value" id="kpiLowStock">–</div>
-        <div class="kpi-label">Low Stock (<=2 available)</div>
+        <div class="kpi-value" id="kpiTopStatus">–</div>
+        <div class="kpi-label">Top Status by Revenue</div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Top Products by Units Sold (This Year)</h2>
-        <div class="chart" id="topUnitsBar"></div>
+        <h2>Status Scoreboard</h2>
+        <p class="subtle">Revenue and gross profit by Best Seller Status (top statuses, rest grouped into Other).</p>
+        <div class="chart" id="statusScoreboard"></div>
       </div>
 
       <div class="card">
-        <h2>Stock Value by Parent Category</h2>
-        <div class="chart" id="stockValueByCat"></div>
-      </div>
-
-      <div class="card">
-        <h2>Profit % Distribution (Per Unit)</h2>
-        <div class="chart" id="profitHist"></div>
-      </div>
-
-      <div class="card">
-        <h2>Units Sold vs Profit % (Bubble by Stock Value)</h2>
-        <div class="chart" id="salesVsProfit"></div>
+        <h2>TY vs LY Units by Status</h2>
+        <p class="subtle">Helps spot which statuses are growing or declining in demand.</p>
+        <div class="chart" id="unitsTyLyByStatus"></div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Content Readiness</h2>
-        <div class="chart" id="contentReadiness"></div>
+        <h2>Sales vs Stock Value by Status</h2>
+        <p class="subtle">X: Units. Y: Stock Value. Bubble size: Available stock. Colour: status.</p>
+        <div class="chart" id="salesVsStock"></div>
       </div>
 
       <div class="card">
-        <h2>Images Count (By Best Seller Status)</h2>
-        <div class="chart" id="imagesByStatus"></div>
+        <h2>Weeks of Cover by Status</h2>
+        <p class="subtle">Cover uses Available Stock and Units TY (annualised). High cover suggests overstock risk.</p>
+        <div class="chart" id="coverByStatus"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Profit % by Status</h2>
+        <p class="subtle">Box plot from Calculated Profit % Per Unit.</p>
+        <div class="chart" id="profitPctByStatus"></div>
       </div>
 
       <div class="card">
-        <h2>Availability vs Supplier Stock</h2>
-        <div class="chart" id="stockScatter"></div>
-      </div>
-
-      <div class="card">
-        <h2>Pricing (Selling ex VAT vs Cost ex VAT)</h2>
-        <div class="chart" id="priceScatter"></div>
+        <h2>Discount Depth by Status</h2>
+        <p class="subtle">Discount % = (Selling ex VAT - Sale Price) ÷ Selling ex VAT (only where a sale price exists).</p>
+        <div class="chart" id="discountByStatus"></div>
       </div>
     </section>
 
     <section class="card table-card">
       <div class="table-head">
-        <h2>Product Table</h2>
+        <h2>SKU Explorer</h2>
         <div class="table-meta" id="tableMeta">–</div>
       </div>
 
       <div class="table-wrap">
-        <table id="productTable">
+        <table id="tbl">
           <thead>
             <tr>
+              <th>Status</th>
               <th>SKU</th>
               <th>Product Name</th>
               <th>Brand</th>
-              <th>Parent Category</th>
-              <th>Sub Category 1</th>
-              <th>Best Seller</th>
-              <th>Avail Stock</th>
-              <th>Supplier Stock</th>
-              <th>Stock Value</th>
-              <th>Units YTD</th>
-              <th>Units LY</th>
               <th>Cost ex VAT</th>
               <th>Selling ex VAT</th>
               <th>Sale Price</th>
+              <th>Discount %</th>
               <th>Profit %</th>
-              <th>PDP?</th>
-              <th>Optimised Desc?</th>
-              <th>Images</th>
-              <th>Filters Correct?</th>
+              <th>Units TY</th>
+              <th>Units LY</th>
+              <th>Revenue TY</th>
+              <th>Gross Profit TY</th>
+              <th>Stock Value</th>
+              <th>Available</th>
+              <th>Supplier</th>
+              <th>On Order?</th>
+              <th>Weeks Cover</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
-      <p class="note">Tip: use Search to focus on a SKU, then the charts update to match.</p>
+
+      <p class="note">
+        Revenue uses Sale Price (if >0) else Selling Price ex VAT.
+        Gross profit uses (effective sell ex VAT - cost ex VAT) × Units TY.
+        Weeks cover uses Available Stock ÷ (Units TY ÷ 52).
+      </p>
     </section>
   </main>
 </body>
