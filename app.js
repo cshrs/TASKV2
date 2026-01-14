@@ -111,6 +111,10 @@ function brandPillHTML(brand){
 /* ========= State ========= */
 let rows = [];
 
+/* table sorting state */
+let tableSortKey = "";
+let tableSortDir = "desc"; // "asc" or "desc"
+
 /* ========= CSV loading ========= */
 function parseCSVText(csvText){
   return new Promise((resolve,reject)=>{
@@ -147,11 +151,10 @@ function hydrate(rawRows){
     const unitsThisYear = toNumber(r["Total Sales this Year"]);
     const unitsLastYear = toNumber(r["Total Sales Last Year"]);
     const status = String(r["Best Seller Status"] ?? "").trim() || "Unknown";
+    const parent = String(r["Parent Category"] ?? "").trim() || "Unknown";
 
-    /* Effective price (sale aware): sale price if present else selling ex VAT */
     const effectiveSellEx = (Number.isFinite(sale) && sale > 0) ? sale : sellEx;
 
-    /* Clear metric naming */
     const revenueUnitsTimesEffectivePrice = (Number.isFinite(unitsThisYear) && Number.isFinite(effectiveSellEx))
       ? unitsThisYear * effectiveSellEx
       : NaN;
@@ -171,8 +174,6 @@ function hydrate(rawRows){
     const discountPct = (Number.isFinite(sale) && sale > 0 && Number.isFinite(sellEx) && sellEx > 0)
       ? ((sellEx - sale) / sellEx) * 100
       : NaN;
-
-    const parent = String(r["Parent Category"] ?? "").trim() || "Unknown";
 
     return {
       productId: String(r["Product ID"] ?? "").trim(),
@@ -199,6 +200,9 @@ function hydrate(rawRows){
 
   buildColourMaps(rows);
   populateFilters();
+
+  tableSortKey = "";
+  tableSortDir = "desc";
   refresh();
 }
 
@@ -209,7 +213,6 @@ function getFilters(){
     brand: document.getElementById("brand").value,
     parent: document.getElementById("parent").value,
     status: document.getElementById("status").value,
-    unitsMode: document.getElementById("unitsMode").value,
     sort: document.getElementById("sort").value,
 
     tableQ: (document.getElementById("tableSearch").value || "").trim().toLowerCase(),
@@ -257,8 +260,8 @@ function sortItems(items, mode){
   else if (mode === "gpSellDesc") copy.sort((a,b)=> safe(b.profitSellingPriceBasis) - safe(a.profitSellingPriceBasis));
   else if (mode === "unitsThisYearDesc") copy.sort((a,b)=> safe(b.unitsThisYear) - safe(a.unitsThisYear));
   else if (mode === "unitsLastYearDesc") copy.sort((a,b)=> safe(b.unitsLastYear) - safe(a.unitsLastYear));
-  else if (mode === "profitPctDesc") copy.sort((a,b)=> safe(b.profitPct) - safe(a.profitPct));
-  else if (mode === "discountDesc") copy.sort((a,b)=> safe(b.discountPct) - safe(a.discountPct));
+  else if (mode === "profitPctDesc") copy.sort((a,b)=> safe(a.profitPct) - safe(b.profitPct));
+  else if (mode === "discountDesc") copy.sort((a,b)=> safe(a.discountPct) - safe(b.discountPct));
 
   return copy;
 }
@@ -364,7 +367,7 @@ function discountBand(p){
   return "40%+";
 }
 
-/* ========= Parent category segment helpers ========= */
+/* ========= Segments ========= */
 function parentIsPowerTools(parent){
   const p = normaliseKey(parent);
   return p.includes("power") && p.includes("tool");
@@ -402,22 +405,8 @@ function drawBrandRevProfitEffective(items){
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
   safePlot("brandRevProfitEffective", [
-    {
-      type:"bar",
-      name:"Revenue (units × effective price)",
-      x: labels,
-      y: rows2.map(x=>x.revEffective),
-      marker:{ color: colours, opacity: 0.72 },
-      hovertemplate:"%{x}<br>Revenue: £%{y:,.0f}<extra></extra>"
-    },
-    {
-      type:"bar",
-      name:"Gross profit (effective price basis)",
-      x: labels,
-      y: rows2.map(x=>x.gpEffective),
-      marker:{ color: colours, opacity: 0.95 },
-      hovertemplate:"%{x}<br>Gross profit: £%{y:,.0f}<extra></extra>"
-    }
+    { type:"bar", name:"Revenue (units × effective price)", x:labels, y:rows2.map(x=>x.revEffective), marker:{ color: colours, opacity: 0.72 } },
+    { type:"bar", name:"Gross profit (effective price basis)", x:labels, y:rows2.map(x=>x.gpEffective), marker:{ color: colours, opacity: 0.95 } }
   ], {
     title:"Revenue and Gross Profit This Year by Brand (Top 12, effective price basis)",
     barmode:"group",
@@ -432,22 +421,8 @@ function drawBrandRevProfitSelling(items){
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
   safePlot("brandRevProfitSelling", [
-    {
-      type:"bar",
-      name:"Revenue (units × selling price)",
-      x: labels,
-      y: rows2.map(x=>x.revSelling),
-      marker:{ color: colours, opacity: 0.72 },
-      hovertemplate:"%{x}<br>Revenue: £%{y:,.0f}<extra></extra>"
-    },
-    {
-      type:"bar",
-      name:"Profit (selling price basis)",
-      x: labels,
-      y: rows2.map(x=>x.profitSelling),
-      marker:{ color: colours, opacity: 0.95 },
-      hovertemplate:"%{x}<br>Profit: £%{y:,.0f}<extra></extra>"
-    }
+    { type:"bar", name:"Revenue (units × selling price)", x:labels, y:rows2.map(x=>x.revSelling), marker:{ color: colours, opacity: 0.72 } },
+    { type:"bar", name:"Profit (selling price basis)", x:labels, y:rows2.map(x=>x.profitSelling), marker:{ color: colours, opacity: 0.95 } }
   ], {
     title:"Revenue and Profit This Year by Brand (Top 12, selling price basis)",
     barmode:"group",
@@ -520,7 +495,6 @@ function drawStatusUnitsThisYearLastYear(items){
   });
 }
 
-/* Top SKUs: axis SKU only, hover has full name and exact value */
 function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel){
   const top = items
     .map(r => ({ r, v: valueFn(r) }))
@@ -556,39 +530,6 @@ function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel){
   });
 }
 
-/* Segment brand charts */
-function drawSegmentBrandUnits(items, chartId, title){
-  const rows2 = aggByBrand(items).slice(0,10);
-  const labels = rows2.map(x=>x.k);
-  const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
-
-  safePlot(chartId, [
-    { type:"bar", name:"Units This Year", x:labels, y:rows2.map(x=>x.unitsThisYear), marker:{ color: colours, opacity: 0.82 } },
-    { type:"bar", name:"Units Last Year", x:labels, y:rows2.map(x=>x.unitsLastYear), marker:{ color: colours, opacity: 0.45 } }
-  ], {
-    title,
-    barmode:"group",
-    xaxis:{ automargin:true },
-    yaxis:{ title:"Units" }
-  });
-}
-
-function drawSegmentBrandRevProfit(items, chartId, title){
-  const rows2 = aggByBrand(items).slice(0,10);
-  const labels = rows2.map(x=>x.k);
-  const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
-
-  safePlot(chartId, [
-    { type:"bar", name:"Revenue (units × effective price)", x:labels, y:rows2.map(x=>x.revEffective), marker:{ color: colours, opacity: 0.72 } },
-    { type:"bar", name:"Gross profit (effective price basis)", x:labels, y:rows2.map(x=>x.gpEffective), marker:{ color: colours, opacity: 0.95 } }
-  ], {
-    title,
-    barmode:"group",
-    xaxis:{ automargin:true },
-    yaxis:{ title:"£" }
-  });
-}
-
 /* ========= KPIs ========= */
 function renderKpis(items){
   document.getElementById("kpiProducts").textContent = items.length.toLocaleString("en-GB");
@@ -621,15 +562,89 @@ function renderKpis(items){
   }
 }
 
-/* ========= Table ========= */
+/* ========= Table sorting ========= */
+function tableValue(r, key){
+  const v = r[key];
+  if (v == null) return null;
+  return v;
+}
+function compareText(a, b){
+  return String(a ?? "").localeCompare(String(b ?? ""));
+}
+function compareNum(a, b){
+  const na = Number.isFinite(a) ? a : NaN;
+  const nb = Number.isFinite(b) ? b : NaN;
+  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+  if (Number.isFinite(na) && !Number.isFinite(nb)) return 1;
+  if (!Number.isFinite(na) && Number.isFinite(nb)) return -1;
+  return 0;
+}
+function applyTableSort(items){
+  if (!tableSortKey) return items;
+
+  const th = document.querySelector(`#tbl thead th[data-key="${tableSortKey}"]`);
+  const type = th?.dataset?.type || "text";
+
+  const dir = tableSortDir === "asc" ? 1 : -1;
+
+  const copy = [...items];
+  copy.sort((ra, rb)=>{
+    const a = tableValue(ra, tableSortKey);
+    const b = tableValue(rb, tableSortKey);
+    const c = type === "num" ? compareNum(a, b) : compareText(a, b);
+    return c * dir;
+  });
+
+  return copy;
+}
+
+function updateSortHeaderUI(){
+  const headers = document.querySelectorAll("#tbl thead th[data-key]");
+  headers.forEach(h=>{
+    h.classList.remove("sorted");
+    const k = h.dataset.key;
+    const base = h.textContent.replace(/\s*(▲|▼)\s*$/,"").trim();
+    h.textContent = base;
+    if (k === tableSortKey){
+      h.classList.add("sorted");
+      h.textContent = `${base} ${tableSortDir === "asc" ? "▲" : "▼"}`;
+    }
+  });
+
+  const meta = document.getElementById("tableSortMeta");
+  if (meta){
+    if (!tableSortKey) meta.textContent = "";
+    else meta.textContent = `Table sort: ${tableSortKey} (${tableSortDir})`;
+  }
+}
+
+function bindTableHeaderSorting(){
+  const headers = document.querySelectorAll("#tbl thead th[data-key]");
+  headers.forEach(h=>{
+    h.addEventListener("click", ()=>{
+      const key = h.dataset.key;
+      if (tableSortKey === key){
+        tableSortDir = tableSortDir === "asc" ? "desc" : "asc";
+      } else {
+        tableSortKey = key;
+        tableSortDir = "desc";
+      }
+      updateSortHeaderUI();
+      refresh();
+    });
+  });
+}
+
+/* ========= Table render ========= */
 function renderTable(items){
   const tbody = document.querySelector("#tbl tbody");
   tbody.innerHTML = "";
 
   const filtered = applyTableFilters(items);
+  const sorted = applyTableSort(filtered);
 
   const limit = 1400;
-  const shown = filtered.slice(0, limit);
+  const shown = sorted.slice(0, limit);
 
   for (const r of shown){
     const tr = document.createElement("tr");
@@ -696,7 +711,7 @@ function refresh(){
   drawTopSkuMetric(
     items,
     "topSkuRevenueSelling",
-    "Top SKUs by Revenue This Year (selling price basis)",
+    "Top SKUs by Revenue This Year (units × selling price)",
     r => r.revenueUnitsTimesSellingPrice,
     "Revenue"
   );
@@ -704,7 +719,7 @@ function refresh(){
   drawTopSkuMetric(
     items,
     "topSkuRevenueEffective",
-    "Top SKUs by Revenue This Year (effective price basis)",
+    "Top SKUs by Revenue This Year (units × effective price)",
     r => r.revenueUnitsTimesEffectivePrice,
     "Revenue"
   );
@@ -712,11 +727,35 @@ function refresh(){
   const power = segment(items, "power");
   const acc = segment(items, "accessories");
 
-  drawSegmentBrandUnits(power, "powerToolsBrandUnits", "Power Tools: Sales This Year vs Last Year by Brand (Top 10)");
-  drawSegmentBrandRevProfit(power, "powerToolsBrandRevProfit", "Power Tools: Revenue and Gross Profit This Year by Brand (Top 10, effective price basis)");
+  drawTopSkuMetric(
+    power,
+    "powerTopSkuRevenueEffective",
+    "Power Tools: Top SKUs by Revenue This Year (units × effective price)",
+    r => r.revenueUnitsTimesEffectivePrice,
+    "Revenue"
+  );
+  drawTopSkuMetric(
+    power,
+    "powerTopSkuGrossProfit",
+    "Power Tools: Top SKUs by Gross Profit This Year (effective price basis)",
+    r => r.grossProfitEffectivePriceBasis,
+    "Gross profit"
+  );
 
-  drawSegmentBrandUnits(acc, "accessoriesBrandUnits", "Accessories: Sales This Year vs Last Year by Brand (Top 10)");
-  drawSegmentBrandRevProfit(acc, "accessoriesBrandRevProfit", "Accessories: Revenue and Gross Profit This Year by Brand (Top 10, effective price basis)");
+  drawTopSkuMetric(
+    acc,
+    "accTopSkuRevenueEffective",
+    "Accessories: Top SKUs by Revenue This Year (units × effective price)",
+    r => r.revenueUnitsTimesEffectivePrice,
+    "Revenue"
+  );
+  drawTopSkuMetric(
+    acc,
+    "accTopSkuGrossProfit",
+    "Accessories: Top SKUs by Gross Profit This Year (effective price basis)",
+    r => r.grossProfitEffectivePriceBasis,
+    "Gross profit"
+  );
 
   renderTable(items);
 }
@@ -727,11 +766,14 @@ function resetFilters(){
   document.getElementById("brand").value = "";
   document.getElementById("parent").value = "";
   document.getElementById("status").value = "";
-  document.getElementById("unitsMode").value = "thisYear";
   document.getElementById("sort").value = "gpEffDesc";
 
   document.getElementById("tableSearch").value = "";
   document.getElementById("onlySelling").checked = false;
+
+  tableSortKey = "";
+  tableSortDir = "desc";
+  updateSortHeaderUI();
 
   refresh();
 }
@@ -744,7 +786,7 @@ function bind(){
 
   document.getElementById("reset").addEventListener("click", resetFilters);
 
-  ["q","brand","parent","status","unitsMode","sort"].forEach(id=>{
+  ["q","brand","parent","status","sort"].forEach(id=>{
     document.getElementById(id).addEventListener("input", debounce(refresh, 140));
   });
 
@@ -752,6 +794,9 @@ function bind(){
     document.getElementById(id).addEventListener("input", debounce(refresh, 140));
     document.getElementById(id).addEventListener("change", debounce(refresh, 140));
   });
+
+  bindTableHeaderSorting();
+  updateSortHeaderUI();
 }
 
 /* ========= Boot ========= */
