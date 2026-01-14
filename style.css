@@ -3,15 +3,14 @@
   --text: #1f2530;
   --muted: rgba(31,37,48,0.70);
 
-  --card: rgba(255,255,255,0.78);
+  --card: rgba(255,255,255,0.80);
   --cardBorder: rgba(16,18,22,0.08);
   --shadow: 0 12px 34px rgba(18,22,33,0.10);
 
   --radius: 18px;
   --radiusSm: 12px;
 
-  --fieldBg: rgba(255,255,255,0.92);
-
+  --fieldBg: rgba(255,255,255,0.94);
   --ring: rgba(106,166,255,0.45);
 
   --p1: #90e0c5;
@@ -40,7 +39,7 @@ body{
   top: 0;
   z-index: 50;
   backdrop-filter: blur(14px);
-  background: rgba(246,247,251,0.84);
+  background: rgba(246,247,251,0.86);
   border-bottom: 1px solid var(--cardBorder);
 }
 
@@ -63,7 +62,7 @@ body{
   margin: 4px 0 0 0;
   font-size: 12px;
   color: var(--muted);
-  max-width: 820px;
+  max-width: 860px;
 }
 
 .controls{
@@ -95,7 +94,7 @@ body{
   align-items: center;
   gap: 10px;
   border: 1px dashed rgba(18,22,33,0.18);
-  background: rgba(255,255,255,0.70);
+  background: rgba(255,255,255,0.72);
   padding: 10px 12px;
   border-radius: var(--radiusSm);
   cursor: pointer;
@@ -105,7 +104,7 @@ body{
 
 .btn{
   border: 1px solid var(--cardBorder);
-  background: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.94);
   padding: 10px 12px;
   border-radius: var(--radiusSm);
   cursor:pointer;
@@ -165,7 +164,6 @@ body{
 .chart{ width: 100%; height: 460px; }
 
 .table-card{ margin-top: 12px; }
-
 .table-head{
   display:flex;
   align-items: flex-start;
@@ -188,7 +186,7 @@ body{
   border-radius: var(--radiusSm);
   outline: none;
   color: var(--text);
-  min-width: 260px;
+  min-width: 280px;
   box-shadow: 0 4px 14px rgba(18,22,33,0.05);
 }
 .table-tools input[type="search"]:focus{
@@ -201,7 +199,7 @@ body{
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--cardBorder);
-  background: rgba(255,255,255,0.70);
+  background: rgba(255,255,255,0.72);
   border-radius: var(--radiusSm);
   font-size: 12px;
   color: var(--muted);
@@ -214,16 +212,16 @@ body{
   overflow:auto;
   border-radius: 14px;
   border: 1px solid rgba(18,22,33,0.09);
-  background: rgba(255,255,255,0.84);
+  background: rgba(255,255,255,0.86);
   margin-top: 10px;
 }
 
-table{ width: 100%; border-collapse: collapse; min-width: 1750px; }
+table{ width: 100%; border-collapse: collapse; min-width: 1900px; }
 
 thead th{
   position: sticky;
   top: 0;
-  background: rgba(255,255,255,0.97);
+  background: rgba(255,255,255,0.98);
   border-bottom: 1px solid rgba(18,22,33,0.10);
   font-size: 12px;
   text-align: left;

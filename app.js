@@ -36,14 +36,18 @@ function fmtPct(n){
   return Number.isFinite(n) ? `${n.toFixed(1)}%` : "–";
 }
 const sum = arr => arr.reduce((s,v)=> s + (Number.isFinite(v) ? v : 0), 0);
-const clamp = (v,min,max)=> Math.max(min, Math.min(max, v));
 const debounce = (fn,ms=160)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
 
 function chartHeight(id){
   return document.getElementById(id)?.clientHeight || 460;
 }
-function safePlot(id, traces, layout){
-  Plotly.newPlot(id, traces, { ...baseLayout, ...layout, height: chartHeight(id) }, { responsive: true });
+function safePlot(id, traces, layout, config){
+  Plotly.newPlot(
+    id,
+    traces,
+    { ...baseLayout, ...layout, height: chartHeight(id) },
+    { responsive: true, displaylogo: false, ...config }
+  );
 }
 function uniqueSorted(values){
   return [...new Set(values.map(v => String(v ?? "").trim()).filter(v => v !== ""))]
@@ -148,27 +152,27 @@ function hydrate(rawRows){
     const sellEx = toNumber(r["Selling Price ex VAT"]);
     const sale = toNumber(r["Sale Price"]);
     const profitPct = toNumber(r["Calculated Profit % Per Unit"]);
-    const stockValue = toNumber(r["Stock Value"]);
     const avail = toNumber(r["Availabile Stock"]);
     const supplier = toNumber(r["Supplier Stock"]);
     const onOrder = truthy(r["On Order?"]);
-    const unitsTy = toNumber(r["Total Sales this Year"]);
-    const unitsLy = toNumber(r["Total Sales Last Year"]);
+    const unitsThisYear = toNumber(r["Total Sales this Year"]);
+    const unitsLastYear = toNumber(r["Total Sales Last Year"]);
     const status = String(r["Best Seller Status"] ?? "").trim() || "Unknown";
 
+    /* sale-aware basis */
     const effectiveSellEx = (Number.isFinite(sale) && sale > 0) ? sale : sellEx;
+    const revenueSaleAware = (Number.isFinite(unitsThisYear) && Number.isFinite(effectiveSellEx)) ? unitsThisYear * effectiveSellEx : NaN;
+    const gpPerUnitSaleAware = (Number.isFinite(effectiveSellEx) && Number.isFinite(costEx)) ? (effectiveSellEx - costEx) : NaN;
+    const grossProfitSaleAware = (Number.isFinite(unitsThisYear) && Number.isFinite(gpPerUnitSaleAware)) ? unitsThisYear * gpPerUnitSaleAware : NaN;
+
+    /* selling price basis (explicit request) */
+    const revenueSelling = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx)) ? unitsThisYear * sellEx : NaN;
+    const profitPerUnitSelling = (Number.isFinite(sellEx) && Number.isFinite(costEx)) ? (sellEx - costEx) : NaN;
+    const profitSelling = (Number.isFinite(unitsThisYear) && Number.isFinite(profitPerUnitSelling)) ? unitsThisYear * profitPerUnitSelling : NaN;
 
     const discountPct = (Number.isFinite(sale) && sale > 0 && Number.isFinite(sellEx) && sellEx > 0)
       ? ((sellEx - sale) / sellEx) * 100
       : NaN;
-
-    const revenueTy = (Number.isFinite(unitsTy) && Number.isFinite(effectiveSellEx)) ? unitsTy * effectiveSellEx : NaN;
-    const gpPerUnit = (Number.isFinite(effectiveSellEx) && Number.isFinite(costEx)) ? (effectiveSellEx - costEx) : NaN;
-    const grossProfitTy = (Number.isFinite(unitsTy) && Number.isFinite(gpPerUnit)) ? unitsTy * gpPerUnit : NaN;
-
-    const weeklyRate = Number.isFinite(unitsTy) && unitsTy > 0 ? (unitsTy / 52) : 0;
-    const weeksCoverRaw = (Number.isFinite(avail) && weeklyRate > 0) ? (avail / weeklyRate) : NaN;
-    const weeksCover = Number.isFinite(weeksCoverRaw) ? Math.min(weeksCoverRaw, 260) : NaN;
 
     return {
       productId: String(r["Product ID"] ?? "").trim(),
@@ -181,15 +185,17 @@ function hydrate(rawRows){
       onOrder,
 
       costEx, sellEx, sale, profitPct,
-      stockValue, avail, supplier,
-      unitsTy, unitsLy,
+      avail, supplier,
+      unitsThisYear, unitsLastYear,
 
       effectiveSellEx,
       discountPct,
-      revenueTy,
-      gpPerUnit,
-      grossProfitTy,
-      weeksCover
+
+      revenueSaleAware,
+      grossProfitSaleAware,
+
+      revenueSelling,
+      profitSelling
     };
   });
 
@@ -210,8 +216,7 @@ function getFilters(){
     sort: document.getElementById("sort").value,
 
     tableQ: (document.getElementById("tableSearch").value || "").trim().toLowerCase(),
-    onlySelling: document.getElementById("onlySelling").checked,
-    onlyOnOrder: document.getElementById("onlyOnOrder").checked
+    onlySelling: document.getElementById("onlySelling").checked
   };
 }
 
@@ -242,29 +247,25 @@ function applyTableFilters(items){
   const f = getFilters();
   let out = items;
 
-  if (f.onlySelling) out = out.filter(r => Number.isFinite(r.unitsTy) && r.unitsTy > 0);
-  if (f.onlyOnOrder) out = out.filter(r => r.onOrder === true);
+  if (f.onlySelling) out = out.filter(r => Number.isFinite(r.unitsThisYear) && r.unitsThisYear > 0);
 
   if (f.tableQ){
     out = out.filter(r => (`${r.sku} ${r.name} ${r.productId}`.toLowerCase().includes(f.tableQ)));
   }
-
   return out;
 }
 
 function sortItems(items, mode){
   const safe = (v)=> Number.isFinite(v) ? v : -Infinity;
-  const safePos = (v)=> Number.isFinite(v) ? v : Infinity;
 
   const copy = [...items];
 
-  if (mode === "gpDesc") copy.sort((a,b)=> safe(b.grossProfitTy) - safe(a.grossProfitTy));
-  else if (mode === "revDesc") copy.sort((a,b)=> safe(b.revenueTy) - safe(a.revenueTy));
-  else if (mode === "unitsTyDesc") copy.sort((a,b)=> safe(b.unitsTy) - safe(a.unitsTy));
-  else if (mode === "unitsLyDesc") copy.sort((a,b)=> safe(b.unitsLy) - safe(a.unitsLy));
-  else if (mode === "stockValueDesc") copy.sort((a,b)=> safe(b.stockValue) - safe(a.stockValue));
-  else if (mode === "coverDesc") copy.sort((a,b)=> safe(b.weeksCover) - safe(a.weeksCover));
-  else if (mode === "coverAsc") copy.sort((a,b)=> safePos(a.weeksCover) - safePos(b.weeksCover));
+  if (mode === "gpEffDesc") copy.sort((a,b)=> safe(b.grossProfitSaleAware) - safe(a.grossProfitSaleAware));
+  else if (mode === "revEffDesc") copy.sort((a,b)=> safe(b.revenueSaleAware) - safe(a.revenueSaleAware));
+  else if (mode === "revSellDesc") copy.sort((a,b)=> safe(b.revenueSelling) - safe(a.revenueSelling));
+  else if (mode === "gpSellDesc") copy.sort((a,b)=> safe(b.profitSelling) - safe(a.profitSelling));
+  else if (mode === "unitsThisYearDesc") copy.sort((a,b)=> safe(b.unitsThisYear) - safe(a.unitsThisYear));
+  else if (mode === "unitsLastYearDesc") copy.sort((a,b)=> safe(b.unitsLastYear) - safe(a.unitsLastYear));
   else if (mode === "profitPctDesc") copy.sort((a,b)=> safe(b.profitPct) - safe(a.profitPct));
   else if (mode === "discountDesc") copy.sort((a,b)=> safe(b.discountPct) - safe(a.discountPct));
 
@@ -300,33 +301,55 @@ function aggByBrand(items){
   const m = new Map();
   for (const r of items){
     const k = r.brand || "Unknown";
-    if (!m.has(k)) m.set(k, { k, unitsTy:0, unitsLy:0, rev:0, gp:0 });
+    if (!m.has(k)) m.set(k, {
+      k,
+      unitsThisYear:0,
+      unitsLastYear:0,
+      revSaleAware:0,
+      gpSaleAware:0,
+      revSelling:0,
+      profitSelling:0
+    });
     const o = m.get(k);
-    o.unitsTy += Number.isFinite(r.unitsTy) ? r.unitsTy : 0;
-    o.unitsLy += Number.isFinite(r.unitsLy) ? r.unitsLy : 0;
-    o.rev += Number.isFinite(r.revenueTy) ? r.revenueTy : 0;
-    o.gp += Number.isFinite(r.grossProfitTy) ? r.grossProfitTy : 0;
+
+    o.unitsThisYear += Number.isFinite(r.unitsThisYear) ? r.unitsThisYear : 0;
+    o.unitsLastYear += Number.isFinite(r.unitsLastYear) ? r.unitsLastYear : 0;
+
+    o.revSaleAware += Number.isFinite(r.revenueSaleAware) ? r.revenueSaleAware : 0;
+    o.gpSaleAware += Number.isFinite(r.grossProfitSaleAware) ? r.grossProfitSaleAware : 0;
+
+    o.revSelling += Number.isFinite(r.revenueSelling) ? r.revenueSelling : 0;
+    o.profitSelling += Number.isFinite(r.profitSelling) ? r.profitSelling : 0;
   }
-  return [...m.values()].sort((a,b)=> b.rev - a.rev);
+  return [...m.values()].sort((a,b)=> b.revSaleAware - a.revSaleAware);
 }
 
 function aggByStatusUnits(items){
   const m = new Map();
   for (const r of items){
     const k = r.status || "Unknown";
-    if (!m.has(k)) m.set(k, { k, ty:0, ly:0 });
+    if (!m.has(k)) m.set(k, { k, thisYear:0, lastYear:0 });
     const o = m.get(k);
-    o.ty += Number.isFinite(r.unitsTy) ? r.unitsTy : 0;
-    o.ly += Number.isFinite(r.unitsLy) ? r.unitsLy : 0;
+    o.thisYear += Number.isFinite(r.unitsThisYear) ? r.unitsThisYear : 0;
+    o.lastYear += Number.isFinite(r.unitsLastYear) ? r.unitsLastYear : 0;
   }
-  return [...m.values()].sort((a,b)=> b.ty - a.ty);
+  return [...m.values()].sort((a,b)=> b.thisYear - a.thisYear);
 }
 
 function aggByStatusRevenue(items){
   const m = new Map();
   for (const r of items){
     const k = r.status || "Unknown";
-    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueTy) ? r.revenueTy : 0));
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueSaleAware) ? r.revenueSaleAware : 0));
+  }
+  return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
+}
+
+function aggByParentRevenue(items){
+  const m = new Map();
+  for (const r of items){
+    const k = r.parent || "Unknown";
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueSaleAware) ? r.revenueSaleAware : 0));
   }
   return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
 }
@@ -340,95 +363,132 @@ function topNWithOtherPairs(rows2, n=10){
 }
 
 /* ========= Charts ========= */
-function drawBrandUnitsTyLy(items){
+function drawBrandUnitsThisYearLastYear(items){
   const rows2 = aggByBrand(items).slice(0,12);
   const labels = rows2.map(x=>x.k);
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
-  safePlot("brandUnitsTyLy", [
+  safePlot("brandUnitsThisYearLastYear", [
     {
       type:"bar",
-      name:"Units TY",
+      name:"Units This Year",
       x: labels,
-      y: rows2.map(x=>x.unitsTy),
-      marker:{ color: colours, opacity: 0.80 },
-      hovertemplate:"%{x}<br>Units TY: %{y:,.0f}<extra></extra>"
+      y: rows2.map(x=>x.unitsThisYear),
+      marker:{ color: colours, opacity: 0.82 },
+      hovertemplate:"%{x}<br>Units this year: %{y:,.0f}<extra></extra>"
     },
     {
       type:"bar",
-      name:"Units LY",
+      name:"Units Last Year",
       x: labels,
-      y: rows2.map(x=>x.unitsLy),
+      y: rows2.map(x=>x.unitsLastYear),
       marker:{ color: colours, opacity: 0.45 },
-      hovertemplate:"%{x}<br>Units LY: %{y:,.0f}<extra></extra>"
+      hovertemplate:"%{x}<br>Units last year: %{y:,.0f}<extra></extra>"
     }
   ], {
-    title:"Sales TY vs Sales LY by Brand (Top 12)",
+    title:"Sales This Year vs Last Year by Brand (Top 12)",
     barmode:"group",
     xaxis:{ automargin:true },
     yaxis:{ title:"Units" }
   });
 }
 
-function drawBrandRevGp(items){
+function drawBrandRevProfitSaleAware(items){
   const rows2 = aggByBrand(items).slice(0,12);
   const labels = rows2.map(x=>x.k);
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
-  safePlot("brandRevGp", [
+  safePlot("brandRevProfitSaleAware", [
     {
       type:"bar",
-      name:"Revenue TY (ex VAT)",
+      name:"Revenue This Year (sale aware)",
       x: labels,
-      y: rows2.map(x=>x.rev),
-      marker:{ color: colours, opacity: 0.75 },
+      y: rows2.map(x=>x.revSaleAware),
+      marker:{ color: colours, opacity: 0.72 },
       hovertemplate:"%{x}<br>Revenue: £%{y:,.0f}<extra></extra>"
     },
     {
       type:"bar",
-      name:"Gross Profit TY",
+      name:"Gross Profit This Year (sale aware)",
       x: labels,
-      y: rows2.map(x=>x.gp),
-      marker:{ color: colours },
+      y: rows2.map(x=>x.gpSaleAware),
+      marker:{ color: colours, opacity: 0.95 },
       hovertemplate:"%{x}<br>Gross profit: £%{y:,.0f}<extra></extra>"
     }
   ], {
-    title:"Revenue TY and Gross Profit TY by Brand (Top 12)",
+    title:"Revenue and Gross Profit This Year by Brand (Top 12, sale aware)",
     barmode:"group",
     xaxis:{ automargin:true },
     yaxis:{ title:"£" }
   });
 }
 
-/* No bubble chart: fixed marker size scatter */
-function drawStockVsUnits(items){
-  const mode = document.getElementById("unitsMode").value;
+function drawBrandRevProfitSelling(items){
+  const rows2 = aggByBrand(items).slice(0,12);
+  const labels = rows2.map(x=>x.k);
+  const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
+  safePlot("brandRevProfitSelling", [
+    {
+      type:"bar",
+      name:"Revenue This Year (selling price)",
+      x: labels,
+      y: rows2.map(x=>x.revSelling),
+      marker:{ color: colours, opacity: 0.72 },
+      hovertemplate:"%{x}<br>Revenue: £%{y:,.0f}<extra></extra>"
+    },
+    {
+      type:"bar",
+      name:"Profit This Year (selling price)",
+      x: labels,
+      y: rows2.map(x=>x.profitSelling),
+      marker:{ color: colours, opacity: 0.95 },
+      hovertemplate:"%{x}<br>Profit: £%{y:,.0f}<extra></extra>"
+    }
+  ], {
+    title:"Revenue and Profit This Year by Brand (Top 12, selling price basis)",
+    barmode:"group",
+    xaxis:{ automargin:true },
+    yaxis:{ title:"£" }
+  });
+}
+
+function drawParentRevenueShare(items){
+  const rows2 = topNWithOtherPairs(aggByParentRevenue(items).map(x=>({k:x.k, v:x.v})), 10);
+  safePlot("parentRevenueShare", [{
+    type:"pie",
+    labels: rows2.map(x=>x.k),
+    values: rows2.map(x=>x.v),
+    hole: 0.45,
+    textinfo:"label+percent"
+  }], { title:"Parent Category Revenue Share (This Year, sale aware)" });
+}
+
+function drawSkuProfitabilityMap(items){
+  const colour = [];
   const x = [];
   const y = [];
-  const colour = [];
   const text = [];
 
   for (const r of items){
-    const units = mode === "ly" ? r.unitsLy : r.unitsTy;
-    const sv = r.stockValue;
-    if (!Number.isFinite(sv)) continue;
+    if (!Number.isFinite(r.revenueSaleAware) || !Number.isFinite(r.grossProfitSaleAware)) continue;
 
-    x.push(Number.isFinite(units) ? units : 0);
-    y.push(sv);
+    x.push(r.revenueSaleAware);
+    y.push(r.grossProfitSaleAware);
+
     colour.push(brandColour.get(r.brand) || "#cbd5e1");
 
     text.push(
-      `${r.sku} | ${r.name}` +
+      `<b>${r.sku}</b><br>${r.name}` +
       `<br>${r.brand} | ${r.parent}` +
       `<br>Status: ${r.status}` +
-      `<br>Units TY: ${fmtInt(r.unitsTy)} Units LY: ${fmtInt(r.unitsLy)}` +
-      `<br>Revenue TY: ${fmtGBP(r.revenueTy)} GP TY: ${fmtGBP(r.grossProfitTy)}` +
-      `<br>Stock Value: ${fmtGBP(r.stockValue)} Available: ${fmtInt(r.avail)}`
+      `<br>Units this year: ${fmtInt(r.unitsThisYear)} Units last year: ${fmtInt(r.unitsLastYear)}` +
+      `<br>Revenue (sale aware): ${fmtGBP(r.revenueSaleAware)}` +
+      `<br>Gross profit (sale aware): ${fmtGBP(r.grossProfitSaleAware)}`
     );
   }
 
-  safePlot("stockVsUnits", [{
+  safePlot("skuProfitabilityMap", [{
     type:"scatter",
     mode:"markers",
     x, y,
@@ -436,65 +496,46 @@ function drawStockVsUnits(items){
     hoverinfo:"text",
     marker:{ size: 9, color: colour, opacity: 0.72 }
   }], {
-    title:"Stock Value vs Units (Scatter)",
-    xaxis:{ title: mode === "ly" ? "Units (Last Year)" : "Units (This Year)", rangemode:"tozero" },
-    yaxis:{ title:"Stock Value (£)", rangemode:"tozero" }
+    title:"SKU Profitability Map (This Year, sale aware)",
+    xaxis:{ title:"Revenue This Year (sale aware, £)", rangemode:"tozero" },
+    yaxis:{ title:"Gross Profit This Year (sale aware, £)", rangemode:"tozero" }
   });
 }
 
-function drawCoverHist(items){
-  const vals = items
-    .map(r=>r.weeksCover)
-    .filter(v=>Number.isFinite(v) && v >= 0 && v <= 260);
-
-  safePlot("coverHist", [{
-    type:"histogram",
-    x: vals,
-    nbinsx: 40,
-    hovertemplate:"Weeks cover: %{x:.1f}<extra></extra>"
-  }], {
-    title:"Weeks of Cover Distribution",
-    xaxis:{ title:"Weeks of cover (capped at 260)" },
-    yaxis:{ title:"SKUs" }
-  });
+/* easier than discount vs profit scatter: discount bands */
+function discountBand(p){
+  if (!Number.isFinite(p)) return null;
+  if (p < 5) return "0 to 5%";
+  if (p < 10) return "5 to 10%";
+  if (p < 20) return "10 to 20%";
+  if (p < 30) return "20 to 30%";
+  if (p < 40) return "30 to 40%";
+  return "40%+";
 }
 
-function drawDiscountVsProfit(items){
-  const x = [];
-  const y = [];
-  const colour = [];
-  const text = [];
+function drawDiscountBandsUnits(items){
+  const bandsOrder = ["0 to 5%","5 to 10%","10 to 20%","20 to 30%","30 to 40%","40%+"];
 
+  const m = new Map(bandsOrder.map(b=>[b, { band:b, skus:0, units:0 }]));
   for (const r of items){
-    if (!Number.isFinite(r.discountPct)) continue;
-    if (!Number.isFinite(r.profitPct)) continue;
-
-    x.push(r.discountPct);
-    y.push(r.profitPct);
-
-    const c = statusColour.get(r.status) || "#cbd5e1";
-    colour.push(c);
-
-    text.push(
-      `${r.sku} | ${r.name}` +
-      `<br>Status: ${r.status}` +
-      `<br>Discount: ${fmtPct(r.discountPct)}` +
-      `<br>Profit %: ${fmtPct(r.profitPct)}` +
-      `<br>Selling ex VAT: ${fmtGBP(r.sellEx)} Sale: ${Number.isFinite(r.sale) && r.sale > 0 ? fmtGBP(r.sale) : "–"}`
-    );
+    const b = discountBand(r.discountPct);
+    if (!b) continue;
+    const o = m.get(b);
+    o.skus += 1;
+    o.units += Number.isFinite(r.unitsThisYear) ? r.unitsThisYear : 0;
   }
 
-  safePlot("discountVsProfit", [{
-    type:"scatter",
-    mode:"markers",
-    x, y,
-    text,
-    hoverinfo:"text",
-    marker:{ color: colour, opacity: 0.68, size: 9 }
+  const rows2 = bandsOrder.map(b=>m.get(b));
+  safePlot("discountBandsUnits", [{
+    type:"bar",
+    x: rows2.map(x=>x.band),
+    y: rows2.map(x=>x.units),
+    hovertemplate:"%{x}<br>Units this year: %{y:,.0f}<extra></extra>",
+    marker:{ opacity: 0.85 }
   }], {
-    title:"Discount vs Profit % (Colour: Status)",
-    xaxis:{ title:"Discount %", zeroline:true },
-    yaxis:{ title:"Profit % per unit", rangemode:"tozero" }
+    title:"Discount Bands vs Units This Year",
+    xaxis:{ automargin:true },
+    yaxis:{ title:"Units this year" }
   });
 }
 
@@ -507,73 +548,110 @@ function drawStatusShare(items){
     hole: 0.45,
     textinfo:"label+percent",
     marker:{ colors: rows2.map(x=> statusColour.get(x.k) || "#cbd5e1") }
-  }], {
-    title:"Status Share (Revenue TY)"
-  });
+  }], { title:"Status Share (Revenue This Year, sale aware)" });
 }
 
-function drawStatusUnitsTyLy(items){
+function drawStatusUnitsThisYearLastYear(items){
   const rows2 = aggByStatusUnits(items).slice(0,12);
   const labels = rows2.map(x=>x.k);
   const colours = labels.map(s=> statusColour.get(s) || "#cbd5e1");
 
-  safePlot("statusUnitsTyLy", [
-    { type:"bar", name:"Units TY", x:labels, y:rows2.map(x=>x.ty), marker:{ color: colours, opacity: 0.80 } },
-    { type:"bar", name:"Units LY", x:labels, y:rows2.map(x=>x.ly), marker:{ color: colours, opacity: 0.45 } }
+  safePlot("statusUnitsThisYearLastYear", [
+    { type:"bar", name:"Units This Year", x:labels, y:rows2.map(x=>x.thisYear), marker:{ color: colours, opacity: 0.82 } },
+    { type:"bar", name:"Units Last Year", x:labels, y:rows2.map(x=>x.lastYear), marker:{ color: colours, opacity: 0.45 } }
   ], {
-    title:"TY vs LY Units by Status (Top 12)",
+    title:"Sales This Year vs Last Year by Status (Top 12)",
     barmode:"group",
     xaxis:{ automargin:true },
     yaxis:{ title:"Units" }
   });
 }
 
-/* Horizontal labels so you can see every SKU */
-function drawTopSkuGP(items){
+/* Shortened labels: axis shows SKU only, hover shows full name and value */
+function drawTopSkuGrossProfit(items){
   const top = items
-    .map(r=>({
-      label: `${r.sku} | ${r.name}`,
-      v: r.grossProfitTy,
-      brand: r.brand
-    }))
-    .filter(x=>Number.isFinite(x.v) && x.v > 0)
-    .sort((a,b)=> b.v - a.v)
+    .filter(r => Number.isFinite(r.grossProfitSaleAware) && r.grossProfitSaleAware > 0)
+    .sort((a,b)=> b.grossProfitSaleAware - a.grossProfitSaleAware)
     .slice(0, 30);
 
-  const y = top.map(t => t.label);
-  const x = top.map(t => t.v);
-  const colours = top.map((t,i)=> brandColour.get(t.brand) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
+  const y = top.map(r => r.sku || "(no sku)");
+  const x = top.map(r => r.grossProfitSaleAware);
+  const colours = top.map((r,i)=> brandColour.get(r.brand) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
-  safePlot("topSkuGP", [{
+  const hover = top.map(r =>
+    `<b>${r.sku}</b><br>${r.name}` +
+    `<br>${r.brand} | ${r.parent}` +
+    `<br>Status: ${r.status}` +
+    `<br>Gross profit (sale aware): ${fmtGBP(r.grossProfitSaleAware)}`
+  );
+
+  safePlot("topSkuGrossProfit", [{
     type:"bar",
     orientation:"h",
     y,
     x,
-    marker:{ color: colours, opacity: 0.90 },
-    hovertemplate:"£%{x:,.0f}<extra></extra>"
+    marker:{ color: colours, opacity: 0.92 },
+    text: x.map(v => fmtGBP(v)),
+    textposition: "none",
+    hovertext: hover,
+    hoverinfo: "text"
   }], {
-    title:"Top SKUs by Gross Profit TY (Top 30)",
+    title:"Top SKUs by Gross Profit This Year (sale aware)",
     xaxis:{ title:"£" },
     yaxis:{ automargin:true },
-    margin: { t: 56, l: 240, r: 18, b: 60 }
+    margin: { t: 56, l: 180, r: 18, b: 60 }
   });
 }
 
-/* ========= KPIs + status mini tags ========= */
+function drawTopSkuRevenueSelling(items){
+  const top = items
+    .filter(r => Number.isFinite(r.revenueSelling) && r.revenueSelling > 0)
+    .sort((a,b)=> b.revenueSelling - a.revenueSelling)
+    .slice(0, 30);
+
+  const y = top.map(r => r.sku || "(no sku)");
+  const x = top.map(r => r.revenueSelling);
+  const colours = top.map((r,i)=> brandColour.get(r.brand) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
+
+  const hover = top.map(r =>
+    `<b>${r.sku}</b><br>${r.name}` +
+    `<br>${r.brand} | ${r.parent}` +
+    `<br>Status: ${r.status}` +
+    `<br>Revenue (selling price): ${fmtGBP(r.revenueSelling)}`
+  );
+
+  safePlot("topSkuRevenueSelling", [{
+    type:"bar",
+    orientation:"h",
+    y,
+    x,
+    marker:{ color: colours, opacity: 0.92 },
+    hovertext: hover,
+    hoverinfo: "text"
+  }], {
+    title:"Top SKUs by Revenue This Year (selling price basis)",
+    xaxis:{ title:"£" },
+    yaxis:{ automargin:true },
+    margin: { t: 56, l: 180, r: 18, b: 60 }
+  });
+}
+
+/* ========= KPIs ========= */
 function renderKpis(items){
   document.getElementById("kpiProducts").textContent = items.length.toLocaleString("en-GB");
 
-  const unitsTy = sum(items.map(r=>r.unitsTy));
-  const unitsLy = sum(items.map(r=>r.unitsLy));
-  const revTy = sum(items.map(r=>r.revenueTy));
-  const gpTy = sum(items.map(r=>r.grossProfitTy));
-  const stockValue = sum(items.map(r=>r.stockValue));
+  const unitsThisYear = sum(items.map(r=>r.unitsThisYear));
+  const unitsLastYear = sum(items.map(r=>r.unitsLastYear));
 
-  document.getElementById("kpiUnitsTy").textContent = fmtInt(unitsTy);
-  document.getElementById("kpiUnitsLy").textContent = fmtInt(unitsLy);
-  document.getElementById("kpiRevenueTy").textContent = fmtGBP(revTy);
-  document.getElementById("kpiGPTY").textContent = fmtGBP(gpTy);
-  document.getElementById("kpiStockValue").textContent = fmtGBP(stockValue);
+  const revSaleAware = sum(items.map(r=>r.revenueSaleAware));
+  const gpSaleAware = sum(items.map(r=>r.grossProfitSaleAware));
+  const revSelling = sum(items.map(r=>r.revenueSelling));
+
+  document.getElementById("kpiUnitsThisYear").textContent = fmtInt(unitsThisYear);
+  document.getElementById("kpiUnitsLastYear").textContent = fmtInt(unitsLastYear);
+  document.getElementById("kpiRevenueSaleAware").textContent = fmtGBP(revSaleAware);
+  document.getElementById("kpiGrossProfitSaleAware").textContent = fmtGBP(gpSaleAware);
+  document.getElementById("kpiRevenueSelling").textContent = fmtGBP(revSelling);
 
   const statuses = aggByStatusRevenue(items).slice(0, 3);
   const el = document.getElementById("kpiStatusSummary");
@@ -596,7 +674,7 @@ function renderTable(items){
 
   const filtered = applyTableFilters(items);
 
-  const limit = 1200;
+  const limit = 1400;
   const shown = filtered.slice(0, limit);
 
   for (const r of shown){
@@ -607,20 +685,26 @@ function renderTable(items){
       <td>${brandPillHTML(r.brand)}</td>
       <td>${r.parent}</td>
       <td>${statusPillHTML(r.status)}</td>
-      <td>${fmtInt(r.unitsTy)}</td>
-      <td>${fmtInt(r.unitsLy)}</td>
-      <td>${fmtGBP(r.revenueTy)}</td>
-      <td>${fmtGBP(r.grossProfitTy)}</td>
+
+      <td>${fmtInt(r.unitsThisYear)}</td>
+      <td>${fmtInt(r.unitsLastYear)}</td>
+
+      <td>${fmtGBP(r.revenueSaleAware)}</td>
+      <td>${fmtGBP(r.grossProfitSaleAware)}</td>
+
+      <td>${fmtGBP(r.revenueSelling)}</td>
+      <td>${fmtGBP(r.profitSelling)}</td>
+
       <td>${fmtGBP(r.costEx)}</td>
       <td>${fmtGBP(r.sellEx)}</td>
       <td>${Number.isFinite(r.sale) && r.sale > 0 ? fmtGBP(r.sale) : "–"}</td>
+
       <td>${fmtPct(r.discountPct)}</td>
       <td>${fmtPct(r.profitPct)}</td>
-      <td>${fmtGBP(r.stockValue)}</td>
+
       <td>${fmtInt(r.avail)}</td>
       <td>${fmtInt(r.supplier)}</td>
       <td>${r.onOrder ? "Yes" : "No"}</td>
-      <td>${Number.isFinite(r.weeksCover) ? r.weeksCover.toFixed(1) : "–"}</td>
     `;
     tbody.appendChild(tr);
   }
@@ -638,16 +722,20 @@ function refresh(){
 
   renderKpis(items);
 
-  drawBrandUnitsTyLy(items);
-  drawBrandRevGp(items);
-  drawStockVsUnits(items);
-  drawCoverHist(items);
+  drawBrandUnitsThisYearLastYear(items);
+  drawBrandRevProfitSaleAware(items);
+  drawBrandRevProfitSelling(items);
 
-  drawDiscountVsProfit(items);
+  drawParentRevenueShare(items);
+  drawSkuProfitabilityMap(items);
+
+  drawDiscountBandsUnits(items);
+
   drawStatusShare(items);
-  drawStatusUnitsTyLy(items);
+  drawStatusUnitsThisYearLastYear(items);
 
-  drawTopSkuGP(items);
+  drawTopSkuGrossProfit(items);
+  drawTopSkuRevenueSelling(items);
 
   renderTable(items);
 }
@@ -659,12 +747,11 @@ function resetFilters(){
   document.getElementById("parent").value = "";
   document.getElementById("status").value = "";
   document.getElementById("onOrder").value = "";
-  document.getElementById("unitsMode").value = "ty";
-  document.getElementById("sort").value = "gpDesc";
+  document.getElementById("unitsMode").value = "thisYear";
+  document.getElementById("sort").value = "gpEffDesc";
 
   document.getElementById("tableSearch").value = "";
   document.getElementById("onlySelling").checked = false;
-  document.getElementById("onlyOnOrder").checked = false;
 
   refresh();
 }
@@ -681,7 +768,7 @@ function bind(){
     document.getElementById(id).addEventListener("input", debounce(refresh, 140));
   });
 
-  ["tableSearch","onlySelling","onlyOnOrder"].forEach(id=>{
+  ["tableSearch","onlySelling"].forEach(id=>{
     document.getElementById(id).addEventListener("input", debounce(refresh, 140));
     document.getElementById(id).addEventListener("change", debounce(refresh, 140));
   });

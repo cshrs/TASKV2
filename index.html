@@ -17,7 +17,7 @@
     <div class="topbar-inner">
       <div class="title">
         <h1>Sales, Stock and Profit Dashboard</h1>
-        <p>Auto loads MakitaExport.csv. Search SKUs and compare Sales TY, Sales LY, Revenue, Profit and Stock.</p>
+        <p>Auto loads MakitaExport.csv. Search SKUs and compare sales, revenue and profit across this year and last year.</p>
       </div>
 
       <div class="controls">
@@ -39,20 +39,19 @@
         </select>
 
         <select id="unitsMode">
-          <option value="ty" selected>Units axis: This Year</option>
-          <option value="ly">Units axis: Last Year</option>
+          <option value="thisYear" selected>Units axis: This Year</option>
+          <option value="lastYear">Units axis: Last Year</option>
         </select>
 
         <select id="sort">
-          <option value="gpDesc" selected>Sort table: Gross Profit TY (desc)</option>
-          <option value="revDesc">Revenue TY (desc)</option>
-          <option value="unitsTyDesc">Units TY (desc)</option>
-          <option value="unitsLyDesc">Units LY (desc)</option>
-          <option value="stockValueDesc">Stock Value (desc)</option>
-          <option value="coverDesc">Weeks Cover (desc)</option>
-          <option value="coverAsc">Weeks Cover (asc)</option>
-          <option value="profitPctDesc">Profit % (desc)</option>
-          <option value="discountDesc">Discount % (desc)</option>
+          <option value="gpEffDesc" selected>Sort table: Gross Profit (sale aware) desc</option>
+          <option value="revEffDesc">Sort table: Revenue (sale aware) desc</option>
+          <option value="revSellDesc">Sort table: Revenue (selling price) desc</option>
+          <option value="gpSellDesc">Sort table: Profit (selling price) desc</option>
+          <option value="unitsThisYearDesc">Sort table: Units (this year) desc</option>
+          <option value="unitsLastYearDesc">Sort table: Units (last year) desc</option>
+          <option value="profitPctDesc">Sort table: Profit % desc</option>
+          <option value="discountDesc">Sort table: Discount % desc</option>
         </select>
 
         <button id="reset" class="btn" type="button">Reset</button>
@@ -70,62 +69,75 @@
         <div class="kpi-sub" id="kpiStatusSummary"></div>
       </div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsTy">–</div><div class="kpi-label">Units (This Year)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsLy">–</div><div class="kpi-label">Units (Last Year)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiRevenueTy">–</div><div class="kpi-label">Estimated Revenue TY (ex VAT)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiGPTY">–</div><div class="kpi-label">Estimated Gross Profit TY</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiStockValue">–</div><div class="kpi-label">Stock Value</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">–</div><div class="kpi-label">Units This Year</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">–</div><div class="kpi-label">Units Last Year</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiRevenueSaleAware">–</div><div class="kpi-label">Revenue This Year (sale aware, ex VAT)</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiGrossProfitSaleAware">–</div><div class="kpi-label">Gross Profit This Year (sale aware)</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiRevenueSelling">–</div><div class="kpi-label">Revenue This Year (selling price, ex VAT)</div></div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Sales TY vs Sales LY by Brand (Top 12)</h2>
-        <div class="chart" id="brandUnitsTyLy"></div>
+        <h2>Sales This Year vs Last Year by Brand (Top 12)</h2>
+        <div class="chart" id="brandUnitsThisYearLastYear"></div>
       </div>
 
       <div class="card">
-        <h2>Revenue TY and Gross Profit TY by Brand (Top 12)</h2>
-        <div class="chart" id="brandRevGp"></div>
-      </div>
-    </section>
-
-    <section class="grid">
-      <div class="card">
-        <h2>Stock Value vs Units (Scatter)</h2>
-        <p class="subtle">No bubble sizing. Colour by brand. Units axis uses the selector (TY or LY).</p>
-        <div class="chart" id="stockVsUnits"></div>
-      </div>
-
-      <div class="card">
-        <h2>Weeks of Cover Distribution</h2>
-        <p class="subtle">Cover uses Available Stock and Units TY annualised (capped at 260 weeks).</p>
-        <div class="chart" id="coverHist"></div>
+        <h2>Revenue and Gross Profit This Year by Brand (Top 12, sale aware)</h2>
+        <div class="chart" id="brandRevProfitSaleAware"></div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Discount vs Profit % (Colour: Status)</h2>
-        <p class="subtle">Discount only calculated when a Sale Price exists.</p>
-        <div class="chart" id="discountVsProfit"></div>
+        <h2>Revenue and Profit This Year by Brand (Top 12, selling price basis)</h2>
+        <p class="subtle">Revenue uses Units This Year × Selling Price ex VAT. Profit uses (Selling Price ex VAT − Cost Price ex VAT) × Units This Year.</p>
+        <div class="chart" id="brandRevProfitSelling"></div>
       </div>
 
       <div class="card">
-        <h2>Status Share (Revenue TY)</h2>
+        <h2>Parent Category Revenue Share (This Year, sale aware)</h2>
+        <div class="chart" id="parentRevenueShare"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>SKU Profitability Map (This Year, sale aware)</h2>
+        <p class="subtle">Each point is a SKU. X axis is revenue, Y axis is gross profit. Use hover to see details.</p>
+        <div class="chart" id="skuProfitabilityMap"></div>
+      </div>
+
+      <div class="card">
+        <h2>Discount Bands vs Units This Year (simple, readable)</h2>
+        <p class="subtle">Discount only uses rows that have a Sale Price and Selling Price ex VAT.</p>
+        <div class="chart" id="discountBandsUnits"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Status Share (Revenue This Year, sale aware)</h2>
         <div class="chart" id="statusShare"></div>
       </div>
+
+      <div class="card">
+        <h2>Sales This Year vs Last Year by Status (Top 12)</h2>
+        <div class="chart" id="statusUnitsThisYearLastYear"></div>
+      </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>TY vs LY Units by Status (Top 12)</h2>
-        <div class="chart" id="statusUnitsTyLy"></div>
+        <h2>Top SKUs by Gross Profit This Year (sale aware)</h2>
+        <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
+        <div class="chart" id="topSkuGrossProfit"></div>
       </div>
 
       <div class="card">
-        <h2>Top SKUs by Gross Profit TY</h2>
-        <p class="subtle">Shows SKU and name directly on the axis.</p>
-        <div class="chart" id="topSkuGP"></div>
+        <h2>Top SKUs by Revenue This Year (selling price basis)</h2>
+        <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
+        <div class="chart" id="topSkuRevenueSelling"></div>
       </div>
     </section>
 
@@ -140,11 +152,7 @@
           <input id="tableSearch" type="search" placeholder="Search within table (SKU, name, ID)" />
           <label class="toggle">
             <input id="onlySelling" type="checkbox" />
-            <span>Only selling (Units TY >0)</span>
-          </label>
-          <label class="toggle">
-            <input id="onlyOnOrder" type="checkbox" />
-            <span>Only on order</span>
+            <span>Only selling (Units This Year >0)</span>
           </label>
         </div>
       </div>
@@ -154,11 +162,17 @@
           <thead>
             <tr>
               <th>SKU</th><th>Product Name</th><th>Brand</th><th>Parent</th><th>Status</th>
-              <th>Units TY</th><th>Units LY</th>
-              <th>Revenue TY</th><th>Gross Profit TY</th>
+              <th>Units This Year</th><th>Units Last Year</th>
+
+              <th>Revenue This Year (sale aware)</th>
+              <th>Gross Profit This Year (sale aware)</th>
+
+              <th>Revenue This Year (selling price)</th>
+              <th>Profit This Year (selling price)</th>
+
               <th>Cost ex VAT</th><th>Selling ex VAT</th><th>Sale Price</th>
               <th>Discount %</th><th>Profit %</th>
-              <th>Stock Value</th><th>Available</th><th>Supplier</th><th>On Order?</th><th>Weeks Cover</th>
+              <th>Available</th><th>Supplier</th><th>On Order?</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -166,8 +180,8 @@
       </div>
 
       <p class="note">
-        Revenue TY uses Sale Price (if >0) else Selling Price ex VAT.
-        Gross Profit TY uses (effective sell ex VAT - cost ex VAT) × Units TY.
+        Sale aware revenue uses Sale Price when present, otherwise Selling Price ex VAT.
+        Selling price revenue uses Selling Price ex VAT only.
       </p>
     </section>
   </main>
