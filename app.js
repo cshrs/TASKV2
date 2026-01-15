@@ -1,5 +1,5 @@
 /* ========= Configuration ========= */
-const BUILT_IN_CSV = "MakitaExport.csv";
+const BUILT_IN_CSV = "MakitaExport (2).csv";
 
 /* ========= Plotly theme ========= */
 const baseLayout = {
@@ -189,7 +189,7 @@ function pickSubcategory(r){
 }
 
 function pickCalculatedRevenue(r){
-  const candidates = ["Calculated Revenue ","Calculated Revenue","Calculated Revenue"];
+  const candidates = ["Calculated Revenue","Calculated Revenue ","Calculated Revenue  "];
   for (const c of candidates){
     if (c in r) return toNumber(r[c]);
   }
@@ -220,7 +220,6 @@ function hydrate(rawRows){
     const stockValue = toNumber(r["Stock Value"]);
 
     const revenueCalc = pickCalculatedRevenue(r);
-
     const revenueComputed = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx))
       ? unitsThisYear * sellEx
       : NaN;
@@ -233,7 +232,7 @@ function hydrate(rawRows){
       ? ((sellInc - saleInc) / sellInc) * 100
       : NaN;
 
-    // primary revenue for charts/KPI: Calculated Revenue if present, else computed
+    // Primary revenue: export calculated if present, else computed
     const revenuePrimary = Number.isFinite(revenueCalc) ? revenueCalc : revenueComputed;
 
     return {
@@ -582,8 +581,8 @@ function drawClassificationUnitsThisYearLastYear(items){
   });
 }
 
+/* Top SKUs charts: fewer rows so you do not need to zoom */
 function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
-  // fewer bars so labels stay readable without zooming
   const TOP_N = 18;
 
   const top = items
@@ -615,11 +614,9 @@ function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
     title,
     xaxis:{ title: isMoney ? "£" : "Units", gridcolor:"rgba(217,219,223,0.12)" },
     yaxis:{ automargin:true, autorange:"reversed", gridcolor:"rgba(217,219,223,0.06)" },
-    // more room for SKU labels on the left
     margin: { t: 56, l: 220, r: 18, b: 60 }
   });
 }
-
 
 /* ========= KPIs ========= */
 function renderKpis(items){
@@ -747,6 +744,7 @@ function renderTable(items){
       <td>${fmtGBP(r.revenueCalc)}</td>
       <td>${fmtGBP(r.revenueComputed)}</td>
       <td>${fmtGBP(r.profit)}</td>
+      <td>${fmtPct(r.profitPct)}</td>
 
       <td>${fmtGBP(r.costEx)}</td>
       <td>${fmtGBP(r.sellEx)}</td>
@@ -754,7 +752,6 @@ function renderTable(items){
       <td>${Number.isFinite(r.saleInc) && r.saleInc > 0 ? fmtGBP(r.saleInc) : "-"}</td>
 
       <td>${fmtPct(r.discountPct)}</td>
-      <td>${fmtPct(r.profitPct)}</td>
     `;
     tbody.appendChild(tr);
   }
@@ -781,7 +778,7 @@ function refresh(){
 
   drawTopSkuMetric(items, "topSkuProfit", "Top SKUs by Profit This Year", r => r.profit, "Profit", true);
   drawTopSkuMetric(items, "topSkuRevenue", "Top SKUs by Revenue This Year", r => r.revenuePrimary, "Revenue", true);
-  drawTopSkuMetric(items, "topSkuUnits", "Top SKUs by Units Sold This Year", r => r.unitsThisYear, "Units", false);
+  drawTopSkuMetric(items, "topSkuUnits", "Top SKUs by Units Sold This Year", r => r.unitsThisYear, "Units sold this year", false);
 
   renderTable(items);
 }
@@ -822,18 +819,16 @@ function bind(){
   document.getElementById("reset").addEventListener("click", resetFilters);
 
   ["q","brand","classification"].forEach(id=>{
-    document.getElementById(id).addEventListener("input", debounce(refresh, 140));
-    document.getElementById(id).addEventListener("change", debounce(refresh, 140));
+    const el = document.getElementById(id);
+    el.addEventListener("input", debounce(refresh, 140));
+    el.addEventListener("change", debounce(refresh, 140));
   });
 
-  // Parent -> Subcategory dependency (top)
   document.getElementById("parent").addEventListener("change", ()=>{
     document.getElementById("subcategory").value = "";
     populateTopFilters();
     refresh();
   });
-
-  // Subcategory itself (top)
   document.getElementById("subcategory").addEventListener("change", debounce(refresh, 140));
 
   [
@@ -846,14 +841,11 @@ function bind(){
     el.addEventListener("change", debounce(refresh, 140));
   });
 
-  // Parent -> Subcategory dependency (table)
   document.getElementById("tableParent").addEventListener("change", ()=>{
     document.getElementById("tableSubcategory").value = "";
     populateTableFilters();
     refresh();
   });
-
-  // Subcategory itself (table)
   document.getElementById("tableSubcategory").addEventListener("change", debounce(refresh, 140));
 
   bindTableHeaderSorting();
