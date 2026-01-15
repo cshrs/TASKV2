@@ -193,7 +193,7 @@ select:disabled{
 /* Wider SKU Explorer only */
 .table-card{
   margin-top: 12px;
-  width: min(96vw, 1850px);
+  width: min(96vw, 2000px);
   margin-left: 50%;
   transform: translateX(-50%);
 }
@@ -283,7 +283,7 @@ select:disabled{
 }
 
 #tbl tbody td{
-  font-size: 12.5px;
+  font-size: 11px;
   padding: 9px 10px;
   border-bottom: 1px solid rgba(217,219,223,0.10);
   color: rgba(236,230,213,0.92);
@@ -305,7 +305,7 @@ select:disabled{
 }
 #tbl thead th:nth-child(1){ z-index: 9; }
 #tbl tbody tr:hover td:nth-child(1){
-  background: rgba(255,139,0,0.14);
+  background: rgb(255, 140, 0);
 }
 
 /* Allow name to wrap slightly */
