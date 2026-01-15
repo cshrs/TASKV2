@@ -1,5 +1,5 @@
 /* ========= Configuration ========= */
-const BUILT_IN_CSV = "MakitaExport.csv";
+const BUILT_IN_CSV = "Makita Range Export 3.csv";
 
 /* ========= Plotly theme ========= */
 const baseLayout = {
@@ -96,7 +96,6 @@ function sortClassificationOptions(values){
 /* ========= Colours ========= */
 const BRAND_PALETTE = ["#6aa6ff","#ff9fb3","#90e0c5","#ffd08a","#c9b6ff","#8fd3ff","#ffc6a8","#b2e1a1","#f5b3ff","#a4b0ff"];
 
-/* Classification colours */
 const CLASSIFICATION_COLOURS = {
   "A+": "#ff8b00",
   "A": "#90e0c5",
@@ -187,13 +186,11 @@ function pickSubcategory(r){
   }
   return "Unknown";
 }
-
-function pickCalculatedRevenue(r){
-  const candidates = ["Calculated Revenue","Calculated Revenue ","Calculated Revenue  "];
-  for (const c of candidates){
-    if (c in r) return toNumber(r[c]);
-  }
-  return NaN;
+function pickCalculatedRevenueYTD(r){
+  return ("Calculated Revenue YTD" in r) ? toNumber(r["Calculated Revenue YTD"]) : NaN;
+}
+function pickCalculatedRevenueLastYear(r){
+  return ("Calculated Revenue Last Year" in r) ? toNumber(r["Calculated Revenue Last Year"]) : NaN;
 }
 
 /* ========= Hydrate ========= */
@@ -209,6 +206,7 @@ function hydrate(rawRows){
 
     const avail = toNumber(r["Availabile Stock"]);
     const supplier = toNumber(r["Supplier Stock"]);
+    const stockValue = toNumber(r["Stock Value"]);
 
     const unitsThisYear = toNumber(r["Total Sales this Year"]);
     const unitsLastYear = toNumber(r["Total Sales Last Year"]);
@@ -217,9 +215,10 @@ function hydrate(rawRows){
     const parent = String(r["Parent Category"] ?? "").trim() || "Unknown";
     const subcategory = pickSubcategory(r);
 
-    const stockValue = toNumber(r["Stock Value"]);
+    const revenueYTD = pickCalculatedRevenueYTD(r);
+    const revenueLastYear = pickCalculatedRevenueLastYear(r);
 
-    const revenueCalc = pickCalculatedRevenue(r);
+    // Keep for reference and table use
     const revenueComputed = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx))
       ? unitsThisYear * sellEx
       : NaN;
@@ -232,8 +231,8 @@ function hydrate(rawRows){
       ? ((sellInc - saleInc) / sellInc) * 100
       : NaN;
 
-    // Primary revenue: export calculated if present, else computed
-    const revenuePrimary = Number.isFinite(revenueCalc) ? revenueCalc : revenueComputed;
+    // Source of truth for dashboard revenue
+    const revenuePrimary = revenueYTD;
 
     return {
       productId: String(r["Product ID"] ?? "").trim(),
@@ -256,7 +255,8 @@ function hydrate(rawRows){
       discountPct,
 
       revenuePrimary,
-      revenueCalc,
+      revenueYTD,
+      revenueLastYear,
       revenueComputed,
       profit
     };
@@ -491,7 +491,7 @@ function drawBrandRevProfit(items){
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
   safePlot("brandRevProfit", [
-    { type:"bar", name:"Revenue this year (Calculated Revenue)", x:labels, y:rows2.map(x=>x.revenue), marker:{ color: colours, opacity: 0.70 } },
+    { type:"bar", name:"Revenue this year (Calculated Revenue YTD)", x:labels, y:rows2.map(x=>x.revenue), marker:{ color: colours, opacity: 0.70 } },
     { type:"bar", name:"Profit this year", x:labels, y:rows2.map(x=>x.profit), marker:{ color: colours, opacity: 0.95 } }
   ], {
     title:"Revenue and Profit This Year by Brand (Top 12)",
@@ -581,7 +581,7 @@ function drawClassificationUnitsThisYearLastYear(items){
   });
 }
 
-/* Top SKUs charts: fewer rows so you do not need to zoom */
+/* Top SKUs charts: fewer rows so labels are readable */
 function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
   const TOP_N = 18;
 
@@ -624,7 +624,10 @@ function renderKpis(items){
 
   const unitsThisYear = sum(items.map(r=>r.unitsThisYear));
   const unitsLastYear = sum(items.map(r=>r.unitsLastYear));
-  const revenue = sum(items.map(r=>r.revenuePrimary));
+
+  // Export source of truth
+  const revenue = sum(items.map(r=>r.revenueYTD));
+
   const profit = sum(items.map(r=>r.profit));
   const stockValue = sum(items.map(r=>r.stockValue));
 
@@ -741,8 +744,9 @@ function renderTable(items){
       <td>${fmtInt(r.supplier)}</td>
       <td>${fmtGBP(r.stockValue)}</td>
 
-      <td>${fmtGBP(r.revenueCalc)}</td>
-      <td>${fmtGBP(r.revenueComputed)}</td>
+      <td>${fmtGBP(r.revenueLastYear)}</td>
+      <td>${fmtGBP(r.revenueYTD)}</td>
+
       <td>${fmtGBP(r.profit)}</td>
       <td>${fmtPct(r.profitPct)}</td>
 

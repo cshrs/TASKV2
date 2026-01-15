@@ -192,9 +192,7 @@ select:disabled{
 
 .table-card{
   margin-top: 12px;
-
-  /* wider than wrap, centred, without changing other sections */
-  width: min(96vw, 2400px);
+  width: min(96vw, 1850px);
   margin-left: 50%;
   transform: translateX(-50%);
 }
@@ -301,15 +299,15 @@ select:disabled{
   position: sticky;
   left: 0;
   z-index: 6;
-  background: rgb(36, 56, 74);
+  background: rgba(36,56,74,0.96);
   border-right: 1px solid rgba(217,219,223,0.12);
 }
 #tbl thead th:nth-child(1){ z-index: 9; }
 #tbl tbody tr:hover td:nth-child(1){
-  background: rgb(255, 140, 0);
+  background: rgba(255,139,0,0.14);
 }
 
-/* allow name to wrap a bit to reduce horizontal scrolling */
+/* allow name to wrap a bit */
 #tbl td:nth-child(2),
 #tbl th:nth-child(2){
   white-space: normal;
@@ -322,7 +320,6 @@ select:disabled{
   color: rgba(236,230,213,0.70);
 }
 
-/* Pills */
 .pill{
   display:inline-flex;
   align-items:center;
@@ -344,7 +341,6 @@ select:disabled{
   color: rgba(236,230,213,0.72);
 }
 
-/* Responsive */
 @media (max-width: 1050px){
   .topbar-inner{ flex-direction: column; align-items: stretch; }
   .controls{ justify-content: flex-start; }
