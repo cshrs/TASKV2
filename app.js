@@ -1,5 +1,5 @@
 /* ========= Configuration ========= */
-const BUILT_IN_CSV = "Makita Range Export 3.csv";
+const BUILT_IN_CSV = "MakitaExport.csv";
 
 /* ========= Plotly theme ========= */
 const baseLayout = {
@@ -34,29 +34,23 @@ const debounce = (fn,ms=160)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTi
 function chartHeight(id){
   return document.getElementById(id)?.clientHeight || 460;
 }
-
-/* Make Plotly text selectable and keep charts usable */
 function safePlot(id, traces, layout, config){
   Plotly.newPlot(
     id,
     traces,
     { ...baseLayout, ...layout, height: chartHeight(id) },
-    {
-      responsive: true,
-      displaylogo: false,
-      displayModeBar: true,
-      scrollZoom: true,
-      ...config
-    }
+    { responsive: true, displaylogo: false, ...config }
   );
 }
-
 function uniqueSorted(values){
   return [...new Set(values.map(v => String(v ?? "").trim()).filter(v => v !== ""))]
     .sort((a,b)=>a.localeCompare(b));
 }
 
-/* ========= Robust header resolver ========= */
+/* ========= Robust header resolver =========
+   Some exports include stray spaces or hidden chars in header names.
+   We build a normalised lookup once and always resolve via that.
+*/
 function normHeaderKey(s){
   return String(s ?? "")
     .replace(/\uFEFF/g,"")
@@ -65,7 +59,7 @@ function normHeaderKey(s){
     .toLowerCase()
     .replace(/\s+/g," ");
 }
-let headerIndex = new Map();
+let headerIndex = new Map(); // normalised header -> actual header
 function buildHeaderIndex(row){
   headerIndex = new Map();
   for (const k of Object.keys(row || {})){
@@ -77,6 +71,9 @@ function getField(row, headerName){
   const actual = headerIndex.get(normHeaderKey(headerName));
   if (!actual) return "";
   return row[actual];
+}
+function hasField(headerName){
+  return headerIndex.has(normHeaderKey(headerName));
 }
 
 /* ========= Dependent dropdown helpers ========= */
@@ -198,7 +195,7 @@ async function loadFromFile(file){
 }
 async function loadFromPath(path){
   const r = await fetch(path, { cache: "no-store" });
-  if(!r.ok) throw new Error(`Fetch CSV failed: ${r.status}`);
+  if(!r.ok) throw new Error("Fetch CSV failed");
   hydrate(await parseCSVText(await r.text()));
 }
 
@@ -213,30 +210,26 @@ function hydrate(rawRows){
 
   buildHeaderIndex(nonEmpty[0]);
 
+  // These headers exist in your uploaded Makita Range Export 3.csv
+  // (Resolved via normalised header matching)
   const H = {
     sku: "Product SKU",
     brand: "Brand",
     parent: "Parent Category",
     sub1: "Sub Category 1",
     name: "Product Name",
-
     costEx: "Cost Price ex VAT",
     sellInc: "Selling Price inc VAT",
     sellEx: "Selling Price ex VAT",
     saleInc: "Sale Price inc VAT",
-
     profitPct: "Calculated Profit % Per Unit",
-
     stockValue: "Stock Value",
     revenueYTD: "Calculated Revenue YTD",
     revenueLastYear: "Calculated Revenue Last Year",
-
     avail: "Availabile Stock",
     supplier: "Supplier Stock",
-
     unitsThisYear: "Total Sales this Year",
     unitsLastYear: "Total Sales Last Year",
-
     classification: "Best Seller Status"
   };
 
@@ -269,7 +262,6 @@ function hydrate(rawRows){
     return {
       sku: String(getField(r, H.sku) ?? "").trim(),
       name: String(getField(r, H.name) ?? "").trim(),
-
       brand: String(getField(r, H.brand) ?? "").trim() || "Unknown",
       parent: String(getField(r, H.parent) ?? "").trim() || "Unknown",
       subcategory: String(getField(r, H.sub1) ?? "").trim() || "Unknown",
@@ -616,7 +608,7 @@ function drawClassificationUnitsThisYearLastYear(items){
   });
 }
 
-/* Top SKUs charts */
+/* Top SKUs charts: fewer rows so labels are readable */
 function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
   const TOP_N = 18;
 
@@ -655,8 +647,7 @@ function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
 
 /* ========= KPIs ========= */
 function renderKpis(items){
-  const productsEl = document.getElementById("kpiProducts");
-  if (productsEl) productsEl.textContent = items.length.toLocaleString("en-GB");
+  document.getElementById("kpiProducts").textContent = items.length.toLocaleString("en-GB");
 
   const unitsThisYear = sum(items.map(r=>r.unitsThisYear));
   const unitsLastYear = sum(items.map(r=>r.unitsLastYear));
@@ -667,19 +658,14 @@ function renderKpis(items){
   const profit = sum(items.map(r=>r.profit));
   const stockValue = sum(items.map(r=>r.stockValue));
 
-  const uTY = document.getElementById("kpiUnitsThisYear");
-  const uLY = document.getElementById("kpiUnitsLastYear");
-  const rYTD = document.getElementById("kpiRevenueYTD");
-  const rLY = document.getElementById("kpiRevenueLastYear");
-  const p = document.getElementById("kpiProfit");
-  const s = document.getElementById("kpiStockValue");
+  document.getElementById("kpiUnitsThisYear").textContent = fmtInt(unitsThisYear);
+  document.getElementById("kpiUnitsLastYear").textContent = fmtInt(unitsLastYear);
 
-  if (uTY) uTY.textContent = fmtInt(unitsThisYear);
-  if (uLY) uLY.textContent = fmtInt(unitsLastYear);
-  if (rYTD) rYTD.textContent = fmtGBP(revenueYTD);
-  if (rLY) rLY.textContent = fmtGBP(revenueLastYear);
-  if (p) p.textContent = fmtGBP(profit);
-  if (s) s.textContent = fmtGBP(stockValue);
+  document.getElementById("kpiRevenueYTD").textContent = fmtGBP(revenueYTD);
+  document.getElementById("kpiRevenueLastYear").textContent = fmtGBP(revenueLastYear);
+
+  document.getElementById("kpiProfit").textContent = fmtGBP(profit);
+  document.getElementById("kpiStockValue").textContent = fmtGBP(stockValue);
 
   const classes = aggByClassificationRevenue(items).slice(0, 3);
   const el = document.getElementById("kpiClassificationSummary");
@@ -688,7 +674,7 @@ function renderKpis(items){
   }
 }
 
-/* ========= Table sorting ========= */
+/* ========= Table sorting (numeric sorts fixed) ========= */
 function compareText(a, b){
   const ar = gradeRank(a);
   const br = gradeRank(b);
@@ -696,6 +682,7 @@ function compareText(a, b){
   return String(a ?? "").localeCompare(String(b ?? ""), "en-GB", { sensitivity: "base" });
 }
 
+/* Always send blanks to bottom, regardless of direction */
 function compareNumWithBlanksLast(a, b, dir){
   const af = Number.isFinite(a);
   const bf = Number.isFinite(b);
@@ -764,7 +751,6 @@ function bindTableHeaderSorting(){
 /* ========= Table render ========= */
 function renderTable(items){
   const tbody = document.querySelector("#tbl tbody");
-  if (!tbody) return;
   tbody.innerHTML = "";
 
   const f = getFilters();
