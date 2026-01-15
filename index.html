@@ -16,8 +16,13 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="title">
-        <h1>Sales, Stock and Profit Dashboard</h1>
-        <p>Auto loads CSV: Filter, search, and explore sales, revenue, profit, and stock.</p>
+        <div class="brandline">
+          <img class="logo" src="toolden.png" width="500" height="139" alt="Toolden" />
+          <div class="brandtext">
+            <h1>Sales, Stock and Profit Dashboard</h1>
+            <p>Auto loads CSV. Filter, search, and explore sales, revenue, profit, and stock.</p>
+          </div>
+        </div>
       </div>
 
       <div class="controls">
@@ -40,22 +45,29 @@
 
   <main class="wrap">
     <section class="kpis">
-      <div class="kpi">
-        <div class="kpi-top">
-          <div class="kpi-value" id="kpiProducts">-</div>
-          <div class="kpi-label">Products</div>
+      <div class="kpi-group">
+        <div class="kpi-group-title">This year</div>
+
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="kpi-value" id="kpiProducts">-</div>
+            <div class="kpi-label">Products</div>
+          </div>
+          <div class="kpi-sub" id="kpiClassificationSummary"></div>
         </div>
-        <div class="kpi-sub" id="kpiClassificationSummary"></div>
+
+        <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units sold this year</div></div>
+        <div class="kpi"><div class="kpi-value" id="kpiRevenueYTD">-</div><div class="kpi-label">Revenue YTD (Calculated Revenue YTD from export)</div></div>
+        <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit this year (selling price basis)</div></div>
+        <div class="kpi"><div class="kpi-value" id="kpiStockValue">-</div><div class="kpi-label">Stock value</div></div>
       </div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units sold this year</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units sold last year</div></div>
+      <div class="kpi-group">
+        <div class="kpi-group-title">Last year</div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiRevenueYTD">-</div><div class="kpi-label">Revenue YTD (Calculated Revenue YTD from export)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiRevenueLastYear">-</div><div class="kpi-label">Revenue last year (Calculated Revenue Last Year from export)</div></div>
-
-      <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit this year (selling price basis)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiStockValue">-</div><div class="kpi-label">Stock value</div></div>
+        <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units sold last year</div></div>
+        <div class="kpi"><div class="kpi-value" id="kpiRevenueLastYear">-</div><div class="kpi-label">Revenue last year (Calculated Revenue Last Year from export)</div></div>
+      </div>
     </section>
 
     <section class="grid">
@@ -175,12 +187,12 @@
               <th data-key="subcategory" data-type="text">Subcategory</th>
               <th data-key="classification" data-type="text">Classification</th>
 
-              <th data-key="unitsThisYear" data-type="num">Units £ this year</th>
-              <th data-key="unitsLastYear" data-type="num">Units £ last year</th>
+              <th data-key="unitsThisYear" data-type="num">Units sold this year</th>
+              <th data-key="unitsLastYear" data-type="num">Units sold last year</th>
 
               <th data-key="avail" data-type="num">Available</th>
               <th data-key="supplier" data-type="num">Supplier</th>
-              <th data-key="stockValue" data-type="num">Stock £</th>
+              <th data-key="stockValue" data-type="num">Stock value</th>
 
               <th data-key="revenueLastYear" data-type="num">Revenue Last Year</th>
               <th data-key="revenueYTD" data-type="num">Revenue YTD</th>

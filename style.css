@@ -14,11 +14,35 @@
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
+
 body{
   margin:0;
-  background: radial-gradient(10000px 5625px at 20% 10%, rgba(255,139,0,0.18), rgba(255,139,0,0.18)) , var(--dark);
+  background: var(--dark);
   color: var(--cream);
   font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Fixed, non-repeating glow so long pages do not show a reset */
+body::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(1200px 900px at 20% 10%, rgba(255,139,0,0.18), rgba(0,0,0,0)),
+    radial-gradient(1100px 800px at 85% 25%, rgba(106,166,255,0.10), rgba(0,0,0,0)),
+    radial-gradient(900px 700px at 55% 92%, rgba(144,224,197,0.08), rgba(0,0,0,0));
+}
+
+/* Make Plotly text copyable */
+.js-plotly-plot, .js-plotly-plot *{
+  user-select: text !important;
+}
+.js-plotly-plot .draglayer, .js-plotly-plot .nsewdrag{
+  user-select: none !important;
 }
 
 .wrap{
@@ -45,12 +69,27 @@ body{
   justify-content: space-between;
 }
 
-.title h1{
+.brandline{
+  display:flex;
+  align-items:flex-start;
+  gap: 14px;
+}
+
+.logo{
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  display:block;
+  margin-top: 2px;
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,0.35));
+}
+
+.brandtext h1{
   margin: 0;
   font-size: 20px;
   letter-spacing: 0.2px;
 }
-.title p{
+.brandtext p{
   margin: 6px 0 0;
   font-size: 12.5px;
   color: rgba(236,230,213,0.80);
@@ -120,11 +159,34 @@ select:disabled{
 }
 .btn:hover{ background: rgba(255,139,0,0.26); }
 
+/* KPI groups */
 .kpis{
-  display:grid;
-  grid-template-columns: repeat(7, minmax(0,1fr));
-  gap: 12px;
   margin-top: 18px;
+  display:grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 12px;
+}
+
+.kpi-group{
+  background: rgba(36,56,74,0.22);
+  border: 1px solid rgba(217,219,223,0.10);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.kpi-group-title{
+  font-size: 12px;
+  letter-spacing: 0.22px;
+  text-transform: uppercase;
+  color: rgba(236,230,213,0.72);
+  margin-bottom: 10px;
+}
+
+.kpi-group .kpi{
+  margin-bottom: 12px;
+}
+.kpi-group .kpi:last-child{
+  margin-bottom: 0;
 }
 
 .kpi{
@@ -263,6 +325,7 @@ select:disabled{
   min-width: 1650px;
 }
 
+/* Sticky header row */
 #tbl thead th{
   position: sticky;
   top: 0;
@@ -343,12 +406,11 @@ select:disabled{
 }
 
 @media (max-width: 1250px){
-  .kpis{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .kpis{ grid-template-columns: 1fr; }
 }
 @media (max-width: 1050px){
   .topbar-inner{ flex-direction: column; align-items: stretch; }
   .controls{ justify-content: flex-start; }
-  .kpis{ grid-template-columns: repeat(2, minmax(0,1fr)); }
   .grid{ grid-template-columns: 1fr; }
   .chart{ height: 380px; }
 }
