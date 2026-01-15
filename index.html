@@ -51,9 +51,10 @@
       <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units sold this year</div></div>
       <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units sold last year</div></div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiRevenue">-</div><div class="kpi-label">Revenue this year (Calculated Revenue YTD from export)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit this year (selling price basis)</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiRevenueYTD">-</div><div class="kpi-label">Revenue YTD (Calculated Revenue YTD from export)</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiRevenueLastYear">-</div><div class="kpi-label">Revenue last year (Calculated Revenue Last Year from export)</div></div>
 
+      <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit this year (selling price basis)</div></div>
       <div class="kpi"><div class="kpi-value" id="kpiStockValue">-</div><div class="kpi-label">Stock value</div></div>
     </section>
 
@@ -72,7 +73,7 @@
 
     <section class="grid">
       <div class="card">
-        <h2>Parent Category Revenue Share (This Year)</h2>
+        <h2>Parent Category Revenue Share (YTD)</h2>
         <div class="chart" id="parentRevenueShare"></div>
       </div>
 
@@ -91,7 +92,7 @@
       </div>
 
       <div class="card">
-        <h2>Classification Share (Revenue This Year)</h2>
+        <h2>Classification Share (Revenue YTD)</h2>
         <div class="chart" id="classificationShare"></div>
       </div>
     </section>
@@ -111,7 +112,7 @@
 
     <section class="grid">
       <div class="card">
-        <h2>Top SKUs by Revenue This Year</h2>
+        <h2>Top SKUs by Revenue YTD</h2>
         <p class="subtle">Uses Calculated Revenue YTD from export. Axis shows SKU only. Hover shows full name and exact value.</p>
         <div class="chart" id="topSkuRevenue"></div>
       </div>
@@ -184,7 +185,7 @@
               <th data-key="revenueLastYear" data-type="num">Calculated Revenue Last Year</th>
               <th data-key="revenueYTD" data-type="num">Calculated Revenue YTD</th>
 
-              <th data-key="profit" data-type="num">Profit (selling price basis)</th>
+              <th data-key="profit" data-type="num">Profit this year (selling price basis)</th>
               <th data-key="profitPct" data-type="num">Profit % per unit</th>
 
               <th data-key="costEx" data-type="num">Cost ex VAT</th>
@@ -201,7 +202,7 @@
 
       <p class="note">
         Calculated Revenue YTD and Calculated Revenue Last Year are taken directly from the export.
-        Profit is (Selling Price ex VAT − Cost Price ex VAT) × Units sold this year. Click any table header to sort.
+        Profit is (Selling Price ex VAT − Cost Price ex VAT) × Units sold this year. Click any table header to sort. Blank values always sort to the bottom.
       </p>
     </section>
   </main>

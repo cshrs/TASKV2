@@ -102,11 +102,6 @@ const CLASSIFICATION_COLOURS = {
   "B": "#6aa6ff",
   "C": "#ffd08a",
   "D": "#ff9fb3",
-  "Core": "#6aa6ff",
-  "Seasonal": "#ffd08a",
-  "New": "#c9b6ff",
-  "Slow": "#ff9fb3",
-  "Discontinued": "#a4b0ff",
   "Unknown": "#d9dbdf"
 };
 const CLASSIFICATION_FALLBACK = ["#90e0c5","#6aa6ff","#ffd08a","#c9b6ff","#ff9fb3","#b2e1a1","#8fd3ff","#ffc6a8","#a4b0ff"];
@@ -218,11 +213,6 @@ function hydrate(rawRows){
     const revenueYTD = pickCalculatedRevenueYTD(r);
     const revenueLastYear = pickCalculatedRevenueLastYear(r);
 
-    // Keep for reference and table use
-    const revenueComputed = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx))
-      ? unitsThisYear * sellEx
-      : NaN;
-
     const profit = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx) && Number.isFinite(costEx))
       ? unitsThisYear * (sellEx - costEx)
       : NaN;
@@ -230,9 +220,6 @@ function hydrate(rawRows){
     const discountPct = (Number.isFinite(saleInc) && saleInc > 0 && Number.isFinite(sellInc) && sellInc > 0)
       ? ((sellInc - saleInc) / sellInc) * 100
       : NaN;
-
-    // Source of truth for dashboard revenue
-    const revenuePrimary = revenueYTD;
 
     return {
       productId: String(r["Product ID"] ?? "").trim(),
@@ -254,10 +241,8 @@ function hydrate(rawRows){
 
       discountPct,
 
-      revenuePrimary,
       revenueYTD,
       revenueLastYear,
-      revenueComputed,
       profit
     };
   });
@@ -399,15 +384,15 @@ function aggByBrand(items){
   const m = new Map();
   for (const r of items){
     const k = r.brand || "Unknown";
-    if (!m.has(k)) m.set(k, { k, unitsThisYear:0, unitsLastYear:0, revenue:0, profit:0 });
+    if (!m.has(k)) m.set(k, { k, unitsThisYear:0, unitsLastYear:0, revenueYTD:0, profit:0 });
     const o = m.get(k);
 
     o.unitsThisYear += Number.isFinite(r.unitsThisYear) ? r.unitsThisYear : 0;
     o.unitsLastYear += Number.isFinite(r.unitsLastYear) ? r.unitsLastYear : 0;
-    o.revenue += Number.isFinite(r.revenuePrimary) ? r.revenuePrimary : 0;
+    o.revenueYTD += Number.isFinite(r.revenueYTD) ? r.revenueYTD : 0;
     o.profit += Number.isFinite(r.profit) ? r.profit : 0;
   }
-  return [...m.values()].sort((a,b)=> (b.revenue - a.revenue) || (b.profit - a.profit));
+  return [...m.values()].sort((a,b)=> (b.revenueYTD - a.revenueYTD) || (b.profit - a.profit));
 }
 
 function aggByClassificationUnits(items){
@@ -426,7 +411,7 @@ function aggByClassificationRevenue(items){
   const m = new Map();
   for (const r of items){
     const k = r.classification || "Unknown";
-    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenuePrimary) ? r.revenuePrimary : 0));
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueYTD) ? r.revenueYTD : 0));
   }
   return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
 }
@@ -444,7 +429,7 @@ function aggByParentRevenue(items){
   const m = new Map();
   for (const r of items){
     const k = r.parent || "Unknown";
-    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenuePrimary) ? r.revenuePrimary : 0));
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueYTD) ? r.revenueYTD : 0));
   }
   return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
 }
@@ -491,7 +476,7 @@ function drawBrandRevProfit(items){
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
   safePlot("brandRevProfit", [
-    { type:"bar", name:"Revenue this year (Calculated Revenue YTD)", x:labels, y:rows2.map(x=>x.revenue), marker:{ color: colours, opacity: 0.70 } },
+    { type:"bar", name:"Revenue YTD (Calculated Revenue YTD)", x:labels, y:rows2.map(x=>x.revenueYTD), marker:{ color: colours, opacity: 0.70 } },
     { type:"bar", name:"Profit this year", x:labels, y:rows2.map(x=>x.profit), marker:{ color: colours, opacity: 0.95 } }
   ], {
     title:"Revenue and Profit This Year by Brand (Top 12)",
@@ -509,7 +494,7 @@ function drawParentRevenueShare(items){
     values: rows2.map(x=>x.v),
     hole: 0.45,
     textinfo:"label+percent"
-  }], { title:"Parent Category Revenue Share (This Year)" });
+  }], { title:"Parent Category Revenue Share (YTD)" });
 }
 
 function drawStockValueByClassification(items){
@@ -562,7 +547,7 @@ function drawClassificationShare(items){
     hole: 0.45,
     textinfo:"label+percent",
     marker:{ colors: rows2.map(x=> classificationColour.get(x.k) || "#d9dbdf") }
-  }], { title:"Classification Share (Revenue This Year)" });
+  }], { title:"Classification Share (Revenue YTD)" });
 }
 
 function drawClassificationUnitsThisYearLastYear(items){
@@ -625,15 +610,18 @@ function renderKpis(items){
   const unitsThisYear = sum(items.map(r=>r.unitsThisYear));
   const unitsLastYear = sum(items.map(r=>r.unitsLastYear));
 
-  // Export source of truth
-  const revenue = sum(items.map(r=>r.revenueYTD));
+  const revenueYTD = sum(items.map(r=>r.revenueYTD));
+  const revenueLastYear = sum(items.map(r=>r.revenueLastYear));
 
   const profit = sum(items.map(r=>r.profit));
   const stockValue = sum(items.map(r=>r.stockValue));
 
   document.getElementById("kpiUnitsThisYear").textContent = fmtInt(unitsThisYear);
   document.getElementById("kpiUnitsLastYear").textContent = fmtInt(unitsLastYear);
-  document.getElementById("kpiRevenue").textContent = fmtGBP(revenue);
+
+  document.getElementById("kpiRevenueYTD").textContent = fmtGBP(revenueYTD);
+  document.getElementById("kpiRevenueLastYear").textContent = fmtGBP(revenueLastYear);
+
   document.getElementById("kpiProfit").textContent = fmtGBP(profit);
   document.getElementById("kpiStockValue").textContent = fmtGBP(stockValue);
 
@@ -644,21 +632,25 @@ function renderKpis(items){
   }
 }
 
-/* ========= Table sorting ========= */
+/* ========= Table sorting (fixed numeric revenue sorts) ========= */
 function compareText(a, b){
   const ar = gradeRank(a);
   const br = gradeRank(b);
   if (ar != null && br != null) return ar - br;
   return String(a ?? "").localeCompare(String(b ?? ""), "en-GB", { sensitivity: "base" });
 }
-function compareNum(a, b){
-  const na = Number.isFinite(a) ? a : NaN;
-  const nb = Number.isFinite(b) ? b : NaN;
-  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
-  if (Number.isFinite(na) && !Number.isFinite(nb)) return 1;
-  if (!Number.isFinite(na) && Number.isFinite(nb)) return -1;
+
+/* Always send blanks to bottom, regardless of direction */
+function compareNumWithBlanksLast(a, b, dir){
+  const af = Number.isFinite(a);
+  const bf = Number.isFinite(b);
+
+  if (af && bf) return (a - b) * dir;
+  if (af && !bf) return -1;
+  if (!af && bf) return 1;
   return 0;
 }
+
 function applyTableSort(items){
   if (!tableSortKey) return items;
 
@@ -670,12 +662,14 @@ function applyTableSort(items){
   copy.sort((ra, rb)=>{
     const a = ra[tableSortKey];
     const b = rb[tableSortKey];
-    const c = type === "num" ? compareNum(a, b) : compareText(a, b);
-    return c * dir;
+
+    if (type === "num") return compareNumWithBlanksLast(a, b, dir);
+    return compareText(a, b) * dir;
   });
 
   return copy;
 }
+
 function updateSortHeaderUI(){
   const headers = document.querySelectorAll("#tbl thead th[data-key]");
   headers.forEach(h=>{
@@ -694,6 +688,7 @@ function updateSortHeaderUI(){
     meta.textContent = tableSortKey ? `Table sort: ${tableSortKey} (${tableSortDir})` : "";
   }
 }
+
 function bindTableHeaderSorting(){
   const headers = document.querySelectorAll("#tbl thead th[data-key]");
   headers.forEach(h=>{
@@ -781,7 +776,7 @@ function refresh(){
   drawClassificationUnitsThisYearLastYear(items);
 
   drawTopSkuMetric(items, "topSkuProfit", "Top SKUs by Profit This Year", r => r.profit, "Profit", true);
-  drawTopSkuMetric(items, "topSkuRevenue", "Top SKUs by Revenue This Year", r => r.revenuePrimary, "Revenue", true);
+  drawTopSkuMetric(items, "topSkuRevenue", "Top SKUs by Revenue YTD", r => r.revenueYTD, "Revenue YTD", true);
   drawTopSkuMetric(items, "topSkuUnits", "Top SKUs by Units Sold This Year", r => r.unitsThisYear, "Units sold this year", false);
 
   renderTable(items);
