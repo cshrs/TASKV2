@@ -193,7 +193,7 @@ select:disabled{
 /* Wider SKU Explorer only */
 .table-card{
   margin-top: 12px;
-  width: min(96vw, 2000px);
+  width: min(96vw, 2200px);
   margin-left: 50%;
   transform: translateX(-50%);
 }
