@@ -1,5 +1,5 @@
 /* ========= Configuration ========= */
-const BUILT_IN_CSV = "Makita Range Export 3.csv";
+const BUILT_IN_CSV = "MakitaExport.csv";
 
 /* ========= Plotly theme ========= */
 const baseLayout = {
