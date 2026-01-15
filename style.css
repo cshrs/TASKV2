@@ -301,12 +301,12 @@ select:disabled{
   position: sticky;
   left: 0;
   z-index: 6;
-  background: rgba(36,56,74,0.96);
+  background: rgb(36, 56, 74);
   border-right: 1px solid rgba(217,219,223,0.12);
 }
 #tbl thead th:nth-child(1){ z-index: 9; }
 #tbl tbody tr:hover td:nth-child(1){
-  background: rgba(255,139,0,0.14);
+  background: rgb(255, 140, 0);
 }
 
 /* allow name to wrap a bit to reduce horizontal scrolling */
