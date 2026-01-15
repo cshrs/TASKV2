@@ -26,7 +26,7 @@
           <span>Load different CSV</span>
         </label>
 
-        <input id="q" type="search" placeholder="Search SKU, Product Name, Product ID" />
+        <input id="q" type="search" placeholder="Search SKU, Product Name" />
 
         <select id="brand"><option value="">Brand (All)</option></select>
         <select id="parent"><option value="">Parent Category (All)</option></select>
@@ -65,7 +65,7 @@
       </div>
 
       <div class="card">
-        <h2>Revenue and Profit This Year by Brand (Top 12)</h2>
+        <h2>Revenue YTD and Profit This Year by Brand (Top 12)</h2>
         <p class="subtle">Revenue uses Calculated Revenue YTD from the export. Profit uses (Selling Price ex VAT − Cost Price ex VAT) × Units sold this year.</p>
         <div class="chart" id="brandRevProfit"></div>
       </div>
@@ -79,7 +79,7 @@
 
       <div class="card">
         <h2>Stock Value by Classification</h2>
-        <p class="subtle">This uses the Stock Value column from the export. Filter by Classification to drill in.</p>
+        <p class="subtle">Uses the Stock Value column from the export.</p>
         <div class="chart" id="stockValueByClassification"></div>
       </div>
     </section>
@@ -105,7 +105,7 @@
 
       <div class="card">
         <h2>Top SKUs by Profit This Year</h2>
-        <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
+        <p class="subtle">Fewer SKUs shown so labels are readable. Hover shows full name and value.</p>
         <div class="chart" id="topSkuProfit"></div>
       </div>
     </section>
@@ -113,13 +113,13 @@
     <section class="grid">
       <div class="card">
         <h2>Top SKUs by Revenue YTD</h2>
-        <p class="subtle">Uses Calculated Revenue YTD from export. Axis shows SKU only. Hover shows full name and exact value.</p>
+        <p class="subtle">Uses Calculated Revenue YTD from export. Hover shows full name and value.</p>
         <div class="chart" id="topSkuRevenue"></div>
       </div>
 
       <div class="card">
         <h2>Top SKUs by Units Sold This Year</h2>
-        <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
+        <p class="subtle">Hover shows full name and value.</p>
         <div class="chart" id="topSkuUnits"></div>
       </div>
     </section>
@@ -133,7 +133,7 @@
         </div>
 
         <div class="table-tools">
-          <input id="tableSearch" type="search" placeholder="Search within table (SKU, name, ID)" />
+          <input id="tableSearch" type="search" placeholder="Search within table (SKU, name)" />
 
           <select id="tableBrand"><option value="">Brand (All)</option></select>
           <select id="tableParent"><option value="">Parent (All)</option></select>
@@ -179,7 +179,7 @@
               <th data-key="unitsLastYear" data-type="num">Units sold last year</th>
 
               <th data-key="avail" data-type="num">Available</th>
-              <th data-key="supplier" data-type="num">Supplier</th>
+              <th data-key="supplier" data-type="num">Supplier stock</th>
               <th data-key="stockValue" data-type="num">Stock value</th>
 
               <th data-key="revenueLastYear" data-type="num">Calculated Revenue Last Year</th>

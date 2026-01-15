@@ -1,5 +1,5 @@
 /* ========= Configuration ========= */
-const BUILT_IN_CSV = "MakitaExport.csv";
+const BUILT_IN_CSV = "Makita Range Export 3.csv";
 
 /* ========= Plotly theme ========= */
 const baseLayout = {
@@ -45,6 +45,35 @@ function safePlot(id, traces, layout, config){
 function uniqueSorted(values){
   return [...new Set(values.map(v => String(v ?? "").trim()).filter(v => v !== ""))]
     .sort((a,b)=>a.localeCompare(b));
+}
+
+/* ========= Robust header resolver =========
+   Some exports include stray spaces or hidden chars in header names.
+   We build a normalised lookup once and always resolve via that.
+*/
+function normHeaderKey(s){
+  return String(s ?? "")
+    .replace(/\uFEFF/g,"")
+    .replace(/\r/g,"")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g," ");
+}
+let headerIndex = new Map(); // normalised header -> actual header
+function buildHeaderIndex(row){
+  headerIndex = new Map();
+  for (const k of Object.keys(row || {})){
+    const nk = normHeaderKey(k);
+    if (nk && !headerIndex.has(nk)) headerIndex.set(nk, k);
+  }
+}
+function getField(row, headerName){
+  const actual = headerIndex.get(normHeaderKey(headerName));
+  if (!actual) return "";
+  return row[actual];
+}
+function hasField(headerName){
+  return headerIndex.has(normHeaderKey(headerName));
 }
 
 /* ========= Dependent dropdown helpers ========= */
@@ -170,48 +199,57 @@ async function loadFromPath(path){
   hydrate(await parseCSVText(await r.text()));
 }
 
-/* ========= Column pickers ========= */
-function pickSubcategory(r){
-  const candidates = ["Sub Category 1","Subcategory 1","Sub Category1","Sub Category"];
-  for (const c of candidates){
-    if (c in r){
-      const v = String(r[c] ?? "").trim();
-      return v || "Unknown";
-    }
-  }
-  return "Unknown";
-}
-function pickCalculatedRevenueYTD(r){
-  return ("Calculated Revenue YTD" in r) ? toNumber(r["Calculated Revenue YTD"]) : NaN;
-}
-function pickCalculatedRevenueLastYear(r){
-  return ("Calculated Revenue Last Year" in r) ? toNumber(r["Calculated Revenue Last Year"]) : NaN;
-}
-
 /* ========= Hydrate ========= */
 function hydrate(rawRows){
   const nonEmpty = (rawRows || []).filter(r => Object.values(r).some(v => String(v ?? "").trim() !== ""));
+  if (!nonEmpty.length){
+    rows = [];
+    refresh();
+    return;
+  }
+
+  buildHeaderIndex(nonEmpty[0]);
+
+  // These headers exist in your uploaded Makita Range Export 3.csv
+  // (Resolved via normalised header matching)
+  const H = {
+    sku: "Product SKU",
+    brand: "Brand",
+    parent: "Parent Category",
+    sub1: "Sub Category 1",
+    name: "Product Name",
+    costEx: "Cost Price ex VAT",
+    sellInc: "Selling Price inc VAT",
+    sellEx: "Selling Price ex VAT",
+    saleInc: "Sale Price inc VAT",
+    profitPct: "Calculated Profit % Per Unit",
+    stockValue: "Stock Value",
+    revenueYTD: "Calculated Revenue YTD",
+    revenueLastYear: "Calculated Revenue Last Year",
+    avail: "Availabile Stock",
+    supplier: "Supplier Stock",
+    unitsThisYear: "Total Sales this Year",
+    unitsLastYear: "Total Sales Last Year",
+    classification: "Best Seller Status"
+  };
 
   rows = nonEmpty.map(r=>{
-    const costEx = toNumber(r["Cost Price ex VAT"]);
-    const sellEx = toNumber(r["Selling Price ex VAT"]);
-    const sellInc = toNumber(r["Selling Price inc VAT"]);
-    const saleInc = toNumber(r["Sale Price inc VAT"]);
-    const profitPct = toNumber(r["Calculated Profit % Per Unit"]);
+    const costEx = toNumber(getField(r, H.costEx));
+    const sellEx = toNumber(getField(r, H.sellEx));
+    const sellInc = toNumber(getField(r, H.sellInc));
+    const saleInc = toNumber(getField(r, H.saleInc));
 
-    const avail = toNumber(r["Availabile Stock"]);
-    const supplier = toNumber(r["Supplier Stock"]);
-    const stockValue = toNumber(r["Stock Value"]);
+    const stockValue = toNumber(getField(r, H.stockValue));
+    const avail = toNumber(getField(r, H.avail));
+    const supplier = toNumber(getField(r, H.supplier));
 
-    const unitsThisYear = toNumber(r["Total Sales this Year"]);
-    const unitsLastYear = toNumber(r["Total Sales Last Year"]);
+    const unitsThisYear = toNumber(getField(r, H.unitsThisYear));
+    const unitsLastYear = toNumber(getField(r, H.unitsLastYear));
 
-    const classification = String(r["Best Seller Status"] ?? "").trim() || "Unknown";
-    const parent = String(r["Parent Category"] ?? "").trim() || "Unknown";
-    const subcategory = pickSubcategory(r);
+    const revenueYTD = toNumber(getField(r, H.revenueYTD));
+    const revenueLastYear = toNumber(getField(r, H.revenueLastYear));
 
-    const revenueYTD = pickCalculatedRevenueYTD(r);
-    const revenueLastYear = pickCalculatedRevenueLastYear(r);
+    const profitPct = toNumber(getField(r, H.profitPct));
 
     const profit = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx) && Number.isFinite(costEx))
       ? unitsThisYear * (sellEx - costEx)
@@ -222,28 +260,28 @@ function hydrate(rawRows){
       : NaN;
 
     return {
-      productId: String(r["Product ID"] ?? "").trim(),
-      sku: String(r["Product SKU"] ?? "").trim(),
-      name: String(r["Product Name"] ?? "").trim(),
-      brand: String(r["Brand"] ?? "").trim() || "Unknown",
-
-      parent,
-      subcategory,
-      classification,
+      sku: String(getField(r, H.sku) ?? "").trim(),
+      name: String(getField(r, H.name) ?? "").trim(),
+      brand: String(getField(r, H.brand) ?? "").trim() || "Unknown",
+      parent: String(getField(r, H.parent) ?? "").trim() || "Unknown",
+      subcategory: String(getField(r, H.sub1) ?? "").trim() || "Unknown",
+      classification: String(getField(r, H.classification) ?? "").trim() || "Unknown",
 
       costEx, sellEx, sellInc, saleInc,
       profitPct,
 
-      avail, supplier,
       stockValue,
+      avail,
+      supplier,
 
-      unitsThisYear, unitsLastYear,
-
-      discountPct,
+      unitsThisYear,
+      unitsLastYear,
 
       revenueYTD,
       revenueLastYear,
-      profit
+
+      profit,
+      discountPct
     };
   });
 
@@ -254,6 +292,10 @@ function hydrate(rawRows){
 
   populateTopFilters();
   populateTableFilters();
+
+  enableSelect(document.getElementById("subcategory"), false);
+  enableSelect(document.getElementById("tableSubcategory"), false);
+
   refresh();
 }
 
@@ -290,7 +332,7 @@ function applyTopFilters(){
     if (f.classification && r.classification !== f.classification) return false;
 
     if (f.q){
-      const hay = `${r.sku} ${r.name} ${r.productId}`.toLowerCase();
+      const hay = `${r.sku} ${r.name}`.toLowerCase();
       if (!hay.includes(f.q)) return false;
     }
     return true;
@@ -312,7 +354,7 @@ function applyTableFilters(items){
   if (Number.isFinite(f.maxStockValue)) out = out.filter(r => Number.isFinite(r.stockValue) && r.stockValue <= f.maxStockValue);
 
   if (f.tableQ){
-    out = out.filter(r => (`${r.sku} ${r.name} ${r.productId}`.toLowerCase().includes(f.tableQ)));
+    out = out.filter(r => (`${r.sku} ${r.name}`.toLowerCase().includes(f.tableQ)));
   }
 
   return out;
@@ -476,10 +518,10 @@ function drawBrandRevProfit(items){
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
   safePlot("brandRevProfit", [
-    { type:"bar", name:"Revenue YTD (Calculated Revenue YTD)", x:labels, y:rows2.map(x=>x.revenueYTD), marker:{ color: colours, opacity: 0.70 } },
+    { type:"bar", name:"Revenue YTD", x:labels, y:rows2.map(x=>x.revenueYTD), marker:{ color: colours, opacity: 0.70 } },
     { type:"bar", name:"Profit this year", x:labels, y:rows2.map(x=>x.profit), marker:{ color: colours, opacity: 0.95 } }
   ], {
-    title:"Revenue and Profit This Year by Brand (Top 12)",
+    title:"Revenue YTD and Profit This Year by Brand (Top 12)",
     barmode:"group",
     xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels, gridcolor:"rgba(217,219,223,0.12)" },
     yaxis:{ title:"£", gridcolor:"rgba(217,219,223,0.12)" }
@@ -632,7 +674,7 @@ function renderKpis(items){
   }
 }
 
-/* ========= Table sorting (fixed numeric revenue sorts) ========= */
+/* ========= Table sorting (numeric sorts fixed) ========= */
 function compareText(a, b){
   const ar = gradeRank(a);
   const br = gradeRank(b);

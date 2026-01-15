@@ -190,6 +190,7 @@ select:disabled{
   height: 440px;
 }
 
+/* Wider SKU Explorer only */
 .table-card{
   margin-top: 12px;
   width: min(96vw, 1850px);
@@ -307,7 +308,7 @@ select:disabled{
   background: rgba(255,139,0,0.14);
 }
 
-/* allow name to wrap a bit */
+/* Allow name to wrap slightly */
 #tbl td:nth-child(2),
 #tbl th:nth-child(2){
   white-space: normal;
