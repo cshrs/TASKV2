@@ -194,9 +194,9 @@ select:disabled{
   margin-top: 12px;
 
   /* wider than wrap, centred, without changing other sections */
-  width: min(96vw, 1850px);
-  margin-left: 50%;
-  transform: translateX(-50%);
+  width: min(96vw, 2000px);
+  margin-left: 30%;
+  transform: translateX(-30%);
 }
 
 .table-head{
