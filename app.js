@@ -57,13 +57,11 @@ function setSelectOptions(selectEl, values, keepValue = ""){
   values.forEach(v => selectEl.add(new Option(v, v)));
   if (keepValue && values.includes(keepValue)) selectEl.value = keepValue;
 }
-
 function setSelectPlaceholder(selectEl, placeholderText){
   selectEl.innerHTML = "";
   selectEl.add(new Option(placeholderText, ""));
   selectEl.value = "";
 }
-
 function enableSelect(selectEl, enabled){
   selectEl.disabled = !enabled;
   selectEl.style.opacity = enabled ? "1" : "0.65";
@@ -134,7 +132,6 @@ function buildColourMaps(items){
   }
   classificationColour = new Map(pairs);
 }
-
 function hexToRgba(hex, alpha){
   const h = String(hex || "").replace("#","");
   if (h.length !== 6) return `rgba(217,219,223,${alpha})`;
@@ -180,33 +177,8 @@ async function loadFromPath(path){
 }
 
 /* ========= Column pickers ========= */
-function pickStockValue(r){
-  const candidates = [
-    "Stock Value",
-    "Stock value",
-    "Stock Value ex VAT",
-    "Stock Value (ex VAT)",
-    "Stock Value (£)",
-    "Stock Value GBP",
-    "Stock Value Total",
-    "Stock £"
-  ];
-  for (const c of candidates){
-    if (c in r) return toNumber(r[c]);
-  }
-  return NaN;
-}
-
-/* Use Sub Category 1 explicitly for SKU Explorer filters */
 function pickSubcategory(r){
-  const candidates = [
-    "Sub Category 1",
-    "Subcategory 1",
-    "Sub Category1",
-    "Sub Category",
-    "Sub Category 1 ",
-    "Sub Category 1 Name"
-  ];
+  const candidates = ["Sub Category 1","Subcategory 1","Sub Category1","Sub Category"];
   for (const c of candidates){
     if (c in r){
       const v = String(r[c] ?? "").trim();
@@ -216,6 +188,14 @@ function pickSubcategory(r){
   return "Unknown";
 }
 
+function pickCalculatedRevenue(r){
+  const candidates = ["Calculated Revenue ","Calculated Revenue","Calculated Revenue"];
+  for (const c of candidates){
+    if (c in r) return toNumber(r[c]);
+  }
+  return NaN;
+}
+
 /* ========= Hydrate ========= */
 function hydrate(rawRows){
   const nonEmpty = (rawRows || []).filter(r => Object.values(r).some(v => String(v ?? "").trim() !== ""));
@@ -223,17 +203,25 @@ function hydrate(rawRows){
   rows = nonEmpty.map(r=>{
     const costEx = toNumber(r["Cost Price ex VAT"]);
     const sellEx = toNumber(r["Selling Price ex VAT"]);
-    const sale = toNumber(r["Sale Price"]);
+    const sellInc = toNumber(r["Selling Price inc VAT"]);
+    const saleInc = toNumber(r["Sale Price inc VAT"]);
     const profitPct = toNumber(r["Calculated Profit % Per Unit"]);
+
     const avail = toNumber(r["Availabile Stock"]);
     const supplier = toNumber(r["Supplier Stock"]);
+
     const unitsThisYear = toNumber(r["Total Sales this Year"]);
     const unitsLastYear = toNumber(r["Total Sales Last Year"]);
+
     const classification = String(r["Best Seller Status"] ?? "").trim() || "Unknown";
     const parent = String(r["Parent Category"] ?? "").trim() || "Unknown";
     const subcategory = pickSubcategory(r);
 
-    const revenue = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx))
+    const stockValue = toNumber(r["Stock Value"]);
+
+    const revenueCalc = pickCalculatedRevenue(r);
+
+    const revenueComputed = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx))
       ? unitsThisYear * sellEx
       : NaN;
 
@@ -241,29 +229,37 @@ function hydrate(rawRows){
       ? unitsThisYear * (sellEx - costEx)
       : NaN;
 
-    const discountPct = (Number.isFinite(sale) && sale > 0 && Number.isFinite(sellEx) && sellEx > 0)
-      ? ((sellEx - sale) / sellEx) * 100
+    const discountPct = (Number.isFinite(saleInc) && saleInc > 0 && Number.isFinite(sellInc) && sellInc > 0)
+      ? ((sellInc - saleInc) / sellInc) * 100
       : NaN;
 
-    const stockValue = pickStockValue(r);
+    // primary revenue for charts/KPI: Calculated Revenue if present, else computed
+    const revenuePrimary = Number.isFinite(revenueCalc) ? revenueCalc : revenueComputed;
 
     return {
       productId: String(r["Product ID"] ?? "").trim(),
       sku: String(r["Product SKU"] ?? "").trim(),
       name: String(r["Product Name"] ?? "").trim(),
       brand: String(r["Brand"] ?? "").trim() || "Unknown",
+
       parent,
       subcategory,
       classification,
 
-      costEx, sellEx, sale, profitPct,
+      costEx, sellEx, sellInc, saleInc,
+      profitPct,
+
       avail, supplier,
+      stockValue,
+
       unitsThisYear, unitsLastYear,
 
       discountPct,
-      revenue,
-      profit,
-      stockValue
+
+      revenuePrimary,
+      revenueCalc,
+      revenueComputed,
+      profit
     };
   });
 
@@ -409,7 +405,7 @@ function aggByBrand(items){
 
     o.unitsThisYear += Number.isFinite(r.unitsThisYear) ? r.unitsThisYear : 0;
     o.unitsLastYear += Number.isFinite(r.unitsLastYear) ? r.unitsLastYear : 0;
-    o.revenue += Number.isFinite(r.revenue) ? r.revenue : 0;
+    o.revenue += Number.isFinite(r.revenuePrimary) ? r.revenuePrimary : 0;
     o.profit += Number.isFinite(r.profit) ? r.profit : 0;
   }
   return [...m.values()].sort((a,b)=> (b.revenue - a.revenue) || (b.profit - a.profit));
@@ -431,7 +427,7 @@ function aggByClassificationRevenue(items){
   const m = new Map();
   for (const r of items){
     const k = r.classification || "Unknown";
-    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenue) ? r.revenue : 0));
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenuePrimary) ? r.revenuePrimary : 0));
   }
   return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
 }
@@ -449,7 +445,7 @@ function aggByParentRevenue(items){
   const m = new Map();
   for (const r of items){
     const k = r.parent || "Unknown";
-    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenue) ? r.revenue : 0));
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenuePrimary) ? r.revenuePrimary : 0));
   }
   return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
 }
@@ -485,8 +481,8 @@ function drawBrandUnitsThisYearLastYear(items){
   ], {
     title:"Units Sold This Year vs Last Year by Brand (Top 12)",
     barmode:"group",
-    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels, gridcolor:"rgba(217,219,223,0.12)", zerolinecolor:"rgba(217,219,223,0.12)" },
-    yaxis:{ title:"Units", gridcolor:"rgba(217,219,223,0.12)", zerolinecolor:"rgba(217,219,223,0.12)" }
+    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels, gridcolor:"rgba(217,219,223,0.12)" },
+    yaxis:{ title:"Units", gridcolor:"rgba(217,219,223,0.12)" }
   });
 }
 
@@ -496,7 +492,7 @@ function drawBrandRevProfit(items){
   const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
 
   safePlot("brandRevProfit", [
-    { type:"bar", name:"Revenue this year", x:labels, y:rows2.map(x=>x.revenue), marker:{ color: colours, opacity: 0.70 } },
+    { type:"bar", name:"Revenue this year (Calculated Revenue)", x:labels, y:rows2.map(x=>x.revenue), marker:{ color: colours, opacity: 0.70 } },
     { type:"bar", name:"Profit this year", x:labels, y:rows2.map(x=>x.profit), marker:{ color: colours, opacity: 0.95 } }
   ], {
     title:"Revenue and Profit This Year by Brand (Top 12)",
@@ -626,7 +622,7 @@ function renderKpis(items){
 
   const unitsThisYear = sum(items.map(r=>r.unitsThisYear));
   const unitsLastYear = sum(items.map(r=>r.unitsLastYear));
-  const revenue = sum(items.map(r=>r.revenue));
+  const revenue = sum(items.map(r=>r.revenuePrimary));
   const profit = sum(items.map(r=>r.profit));
   const stockValue = sum(items.map(r=>r.stockValue));
 
@@ -743,12 +739,14 @@ function renderTable(items){
       <td>${fmtInt(r.supplier)}</td>
       <td>${fmtGBP(r.stockValue)}</td>
 
-      <td>${fmtGBP(r.revenue)}</td>
+      <td>${fmtGBP(r.revenueCalc)}</td>
+      <td>${fmtGBP(r.revenueComputed)}</td>
       <td>${fmtGBP(r.profit)}</td>
 
       <td>${fmtGBP(r.costEx)}</td>
       <td>${fmtGBP(r.sellEx)}</td>
-      <td>${Number.isFinite(r.sale) && r.sale > 0 ? fmtGBP(r.sale) : "-"}</td>
+      <td>${fmtGBP(r.sellInc)}</td>
+      <td>${Number.isFinite(r.saleInc) && r.saleInc > 0 ? fmtGBP(r.saleInc) : "-"}</td>
 
       <td>${fmtPct(r.discountPct)}</td>
       <td>${fmtPct(r.profitPct)}</td>
@@ -777,7 +775,7 @@ function refresh(){
   drawClassificationUnitsThisYearLastYear(items);
 
   drawTopSkuMetric(items, "topSkuProfit", "Top SKUs by Profit This Year", r => r.profit, "Profit", true);
-  drawTopSkuMetric(items, "topSkuRevenue", "Top SKUs by Revenue This Year", r => r.revenue, "Revenue", true);
+  drawTopSkuMetric(items, "topSkuRevenue", "Top SKUs by Revenue This Year", r => r.revenuePrimary, "Revenue", true);
   drawTopSkuMetric(items, "topSkuUnits", "Top SKUs by Units Sold This Year", r => r.unitsThisYear, "Units", false);
 
   renderTable(items);
@@ -853,14 +851,9 @@ function bind(){
   // Subcategory itself (table)
   document.getElementById("tableSubcategory").addEventListener("change", debounce(refresh, 140));
 
-  // These should still refresh on change
-  document.getElementById("tableBrand").addEventListener("change", debounce(refresh, 140));
-  document.getElementById("tableClassification").addEventListener("change", debounce(refresh, 140));
-
   bindTableHeaderSorting();
   updateSortHeaderUI();
 
-  // Initialise dropdown disabled states at boot
   enableSelect(document.getElementById("subcategory"), false);
   enableSelect(document.getElementById("tableSubcategory"), false);
 }

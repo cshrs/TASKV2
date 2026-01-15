@@ -17,7 +17,7 @@
     <div class="topbar-inner">
       <div class="title">
         <h1>Sales, Stock and Profit Dashboard</h1>
-        <p>Auto loads MakitaExport.csv. Filter, search, and explore sales, revenue, profit, and stock.</p>
+        <p>Auto loads MakitaExport (2).csv. Filter, search, and explore sales, revenue, profit, and stock.</p>
       </div>
 
       <div class="controls">
@@ -51,7 +51,7 @@
       <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units sold this year</div></div>
       <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units sold last year</div></div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiRevenue">-</div><div class="kpi-label">Revenue this year (units × selling price, ex VAT)</div></div>
+      <div class="kpi"><div class="kpi-value" id="kpiRevenue">-</div><div class="kpi-label">Revenue this year (Calculated Revenue from export)</div></div>
       <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit this year (selling price basis)</div></div>
 
       <div class="kpi"><div class="kpi-value" id="kpiStockValue">-</div><div class="kpi-label">Stock value</div></div>
@@ -65,7 +65,7 @@
 
       <div class="card">
         <h2>Revenue and Profit This Year by Brand (Top 12)</h2>
-        <p class="subtle">Revenue uses Units Sold This Year × Selling Price ex VAT. Profit uses (Selling Price ex VAT − Cost Price ex VAT) × Units Sold This Year.</p>
+        <p class="subtle">Revenue uses Calculated Revenue from the export. Profit uses (Selling Price ex VAT − Cost Price ex VAT) × Units sold this year.</p>
         <div class="chart" id="brandRevProfit"></div>
       </div>
     </section>
@@ -86,7 +86,7 @@
     <section class="grid">
       <div class="card">
         <h2>Discount Bands vs Units Sold This Year</h2>
-        <p class="subtle">Discount only uses rows that have both a Sale Price and Selling Price ex VAT.</p>
+        <p class="subtle">Discount uses Selling Price inc VAT vs Sale Price inc VAT (when both exist).</p>
         <div class="chart" id="discountBandsUnits"></div>
       </div>
 
@@ -112,7 +112,7 @@
     <section class="grid">
       <div class="card">
         <h2>Top SKUs by Revenue This Year</h2>
-        <p class="subtle">Axis shows SKU only. Hover shows full name and exact value.</p>
+        <p class="subtle">Uses Calculated Revenue from export. Axis shows SKU only. Hover shows full name and exact value.</p>
         <div class="chart" id="topSkuRevenue"></div>
       </div>
 
@@ -170,26 +170,28 @@
               <th data-key="name" data-type="text">Product Name</th>
 
               <th data-key="brand" data-type="text">Brand</th>
-              <th data-key="parent" data-type="text">Catagory</th>
+              <th data-key="parent" data-type="text">Category</th>
               <th data-key="subcategory" data-type="text">Subcategory</th>
               <th data-key="classification" data-type="text">Classification</th>
 
-              <th data-key="unitsThisYear" data-type="num">Units £ this year</th>
-              <th data-key="unitsLastYear" data-type="num">Units £ last year</th>
+              <th data-key="unitsThisYear" data-type="num">Units sold this year</th>
+              <th data-key="unitsLastYear" data-type="num">Units sold last year</th>
 
               <th data-key="avail" data-type="num">Available</th>
               <th data-key="supplier" data-type="num">Supplier</th>
-              <th data-key="stockValue" data-type="num">Stock £</th>
+              <th data-key="stockValue" data-type="num">Stock value</th>
 
-              <th data-key="revenue" data-type="num">Revenue this year</th>
-              <th data-key="profit" data-type="num">Profit this year</th>
+              <th data-key="revenueCalc" data-type="num">Revenue (Calculated Revenue)</th>
+              <th data-key="revenueComputed" data-type="num">Revenue (units × selling price ex VAT)</th>
+              <th data-key="profit" data-type="num">Profit (selling price basis)</th>
 
               <th data-key="costEx" data-type="num">Cost ex VAT</th>
               <th data-key="sellEx" data-type="num">Selling ex VAT</th>
-              <th data-key="sale" data-type="num">Sale £</th>
+              <th data-key="sellInc" data-type="num">Selling inc VAT</th>
+              <th data-key="saleInc" data-type="num">Sale inc VAT</th>
 
               <th data-key="discountPct" data-type="num">Discount %</th>
-              <th data-key="profitPct" data-type="num">Profit %</th>
+              <th data-key="profitPct" data-type="num">Profit % per unit</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -197,8 +199,8 @@
       </div>
 
       <p class="note">
-        Revenue is Units sold this year × Selling Price ex VAT. Profit is (Selling Price ex VAT − Cost Price ex VAT) × Units sold this year.
-        Click any table header to sort ascending or descending. SKU stays pinned on the left when you scroll.
+        Revenue (Calculated Revenue) is taken directly from the export column. Revenue (units × selling price ex VAT) is computed from Total Sales this Year × Selling Price ex VAT.
+        Profit is (Selling Price ex VAT − Cost Price ex VAT) × Units sold this year. Click any table header to sort. SKU stays pinned on the left.
       </p>
     </section>
   </main>
