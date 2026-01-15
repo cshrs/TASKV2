@@ -583,11 +583,14 @@ function drawClassificationUnitsThisYearLastYear(items){
 }
 
 function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
+  // fewer bars so labels stay readable without zooming
+  const TOP_N = 18;
+
   const top = items
     .map(r => ({ r, v: valueFn(r) }))
     .filter(x => Number.isFinite(x.v) && x.v > 0)
     .sort((a,b)=> b.v - a.v)
-    .slice(0, 30)
+    .slice(0, TOP_N)
     .map(x => ({ ...x.r, v: x.v }));
 
   const y = top.map(r => r.sku || "(no sku)");
@@ -612,9 +615,11 @@ function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
     title,
     xaxis:{ title: isMoney ? "£" : "Units", gridcolor:"rgba(217,219,223,0.12)" },
     yaxis:{ automargin:true, autorange:"reversed", gridcolor:"rgba(217,219,223,0.06)" },
-    margin: { t: 56, l: 180, r: 18, b: 60 }
+    // more room for SKU labels on the left
+    margin: { t: 56, l: 220, r: 18, b: 60 }
   });
 }
+
 
 /* ========= KPIs ========= */
 function renderKpis(items){
