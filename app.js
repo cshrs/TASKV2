@@ -667,10 +667,25 @@ function renderKpis(items){
   document.getElementById("kpiProfit").textContent = fmtGBP(profit);
   document.getElementById("kpiStockValue").textContent = fmtGBP(stockValue);
 
-  const classes = aggByClassificationRevenue(items).slice(0, 3);
+  const classOrder = ["A+","A","B","C","D","F"];
+  const classTotals = new Map(
+    classOrder.map(label => [normaliseKey(label), { label, value: 0 }])
+  );
+  items.forEach(r => {
+    const key = normaliseKey(r.classification);
+    if (classTotals.has(key)){
+      const entry = classTotals.get(key);
+      entry.value += Number.isFinite(r.stockValue) ? r.stockValue : 0;
+    }
+  });
   const el = document.getElementById("kpiClassificationSummary");
   if (el){
-    el.innerHTML = classes.map(c => pillHTML(`${c.k}: ${fmtGBP(c.v)}`, classificationColour.get(c.k))).join("");
+    const pills = classOrder.map(label => {
+      const entry = classTotals.get(normaliseKey(label));
+      const colour = classificationColour.get(label) || CLASSIFICATION_COLOURS[label] || "#d9dbdf";
+      return pillHTML(`${label}: ${fmtGBP(entry?.value ?? 0)}`, colour);
+    });
+    el.innerHTML = pills.join("");
   }
 }
 

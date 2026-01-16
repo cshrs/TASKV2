@@ -15,9 +15,12 @@
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="title">
-        <h1>Sales, Stock and Profit Dashboard</h1>
-        <p>Auto loads CSV: Filter, search, and explore sales, revenue, profit, and stock.</p>
+      <div class="title-area">
+        <img class="brand-logo" src="toolden.png" alt="Toolden logo" />
+        <div class="title">
+          <h1>Sales, Stock and Profit Dashboard</h1>
+          <p>Auto loads CSV: Filter, search, and explore sales, revenue, profit, and stock.</p>
+        </div>
       </div>
 
       <div class="controls">
@@ -39,23 +42,38 @@
   </header>
 
   <main class="wrap">
-    <section class="kpis">
-      <div class="kpi">
-        <div class="kpi-top">
-          <div class="kpi-value" id="kpiProducts">-</div>
-          <div class="kpi-label">Products</div>
+    <section class="kpi-sections">
+      <div class="kpi-section">
+        <div class="kpi-section-title">Overview</div>
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="kpi-top">
+              <div class="kpi-value" id="kpiProducts">-</div>
+              <div class="kpi-label">Products</div>
+            </div>
+            <div class="kpi-subtitle">Stock Value by Classification (A+ to F)</div>
+            <div class="kpi-sub" id="kpiClassificationSummary"></div>
+          </div>
         </div>
-        <div class="kpi-sub" id="kpiClassificationSummary"></div>
       </div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units sold this year</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units sold last year</div></div>
+      <div class="kpi-section">
+        <div class="kpi-section-title">This Year</div>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units Sold (This Year)</div></div>
+          <div class="kpi"><div class="kpi-value" id="kpiRevenueYTD">-</div><div class="kpi-label">Revenue (Year to Date)</div></div>
+          <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit (This Year)</div></div>
+          <div class="kpi"><div class="kpi-value" id="kpiStockValue">-</div><div class="kpi-label">Stock Value (On Hand)</div></div>
+        </div>
+      </div>
 
-      <div class="kpi"><div class="kpi-value" id="kpiRevenueYTD">-</div><div class="kpi-label">Revenue YTD (Calculated Revenue YTD from export)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit this year (selling price basis)</div></div>
-      <div class="kpi"><div class="kpi-value" id="kpiStockValue">-</div><div class="kpi-label">Stock value</div></div>
-
-      <div class="kpi"><div class="kpi-value" id="kpiRevenueLastYear">-</div><div class="kpi-label">Revenue last year (Calculated Revenue Last Year from export)</div></div>
+      <div class="kpi-section">
+        <div class="kpi-section-title">Last Year</div>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units Sold (Last Year)</div></div>
+          <div class="kpi"><div class="kpi-value" id="kpiRevenueLastYear">-</div><div class="kpi-label">Revenue (Last Year)</div></div>
+        </div>
+      </div>
     </section>
 
     <section class="grid">
