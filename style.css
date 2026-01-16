@@ -180,6 +180,13 @@ select:disabled{
   flex-wrap: wrap;
   gap: 8px;
 }
+.kpi-subtitle{
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(236,230,213,0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
 
 .grid{
   display:grid;
