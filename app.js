@@ -667,7 +667,7 @@ function renderKpis(items){
   document.getElementById("kpiProfit").textContent = fmtGBP(profit);
   document.getElementById("kpiStockValue").textContent = fmtGBP(stockValue);
 
-  const classOrder = ["A+","A","B","C","D","F"];
+  const classOrder = ["A+","A","B","C","D","E","F"];
   const classTotals = new Map(
     classOrder.map(label => [normaliseKey(label), { label, value: 0 }])
   );
