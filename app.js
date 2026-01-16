@@ -134,6 +134,7 @@ const CLASSIFICATION_COLOURS = {
   "Unknown": "#d9dbdf"
 };
 const CLASSIFICATION_FALLBACK = ["#90e0c5","#6aa6ff","#ffd08a","#c9b6ff","#ff9fb3","#b2e1a1","#8fd3ff","#ffc6a8","#a4b0ff"];
+const CLASS_ORDER = ["A+","A","B","C","D","E","F"];
 
 let brandColour = new Map();
 let classificationColour = new Map();
@@ -541,13 +542,20 @@ function drawParentRevenueShare(items){
 
 function drawStockValueByClassification(items){
   const rows2 = aggByClassificationStockValue(items);
-  const labels = rows2.map(x=>x.k);
+  const byKey = new Map(rows2.map(x => [normaliseKey(x.k), x.v]));
+  const ordered = CLASS_ORDER.map(label => ({
+    k: label,
+    v: byKey.get(normaliseKey(label)) ?? 0
+  }));
+  const extras = rows2.filter(x => !CLASS_ORDER.some(label => normaliseKey(label) === normaliseKey(x.k)));
+  const combined = [...ordered, ...extras];
+  const labels = combined.map(x=>x.k);
 
   safePlot("stockValueByClassification", [{
     type:"bar",
     x: labels,
-    y: rows2.map(x=>x.v),
-    marker:{ color: rows2.map(x => classificationColour.get(x.k) || "#d9dbdf"), opacity: 0.92 },
+    y: combined.map(x=>x.v),
+    marker:{ color: combined.map(x => classificationColour.get(x.k) || "#d9dbdf"), opacity: 0.92 },
     hovertemplate:"<b>%{x}</b><br>Stock value: £%{y:,.0f}<extra></extra>"
   }], {
     title:"Stock Value by Classification",
@@ -667,10 +675,24 @@ function renderKpis(items){
   document.getElementById("kpiProfit").textContent = fmtGBP(profit);
   document.getElementById("kpiStockValue").textContent = fmtGBP(stockValue);
 
-  const classes = aggByClassificationRevenue(items).slice(0, 3);
+  const classTotals = new Map(
+    CLASS_ORDER.map(label => [normaliseKey(label), { label, value: 0 }])
+  );
+  items.forEach(r => {
+    const key = normaliseKey(r.classification);
+    if (classTotals.has(key)){
+      const entry = classTotals.get(key);
+      entry.value += Number.isFinite(r.stockValue) ? r.stockValue : 0;
+    }
+  });
   const el = document.getElementById("kpiClassificationSummary");
   if (el){
-    el.innerHTML = classes.map(c => pillHTML(`${c.k}: ${fmtGBP(c.v)}`, classificationColour.get(c.k))).join("");
+    const pills = CLASS_ORDER.map(label => {
+      const entry = classTotals.get(normaliseKey(label));
+      const colour = classificationColour.get(label) || CLASSIFICATION_COLOURS[label] || "#d9dbdf";
+      return pillHTML(`${label}: ${fmtGBP(entry?.value ?? 0)}`, colour);
+    });
+    el.innerHTML = pills.join("");
   }
 }
 
