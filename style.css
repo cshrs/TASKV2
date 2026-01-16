@@ -285,7 +285,7 @@ select:disabled{
   border-radius: 14px;
   border: 1px solid var(--border);
   background: rgba(25,25,34,0.35);
-  max-height: 80vh;
+  max-height: 90vh;
 }
 
 #tbl{
