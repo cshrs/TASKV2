@@ -132,6 +132,71 @@ select:disabled{
 }
 .btn:hover{ background: rgba(255,139,0,0.26); }
 
+.lock-screen{
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.lock-card{
+  max-width: 480px;
+  width: 100%;
+  padding: 28px;
+  border-radius: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.lock-logo{
+  height: 52px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+  margin-bottom: 12px;
+}
+.lock-card h1{
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+.lock-card p{
+  margin: 0 0 20px;
+  color: rgba(236,230,213,0.8);
+}
+.lock-form{
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+}
+.lock-label{
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(236,230,213,0.65);
+  text-align: left;
+}
+.lock-form input{
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(36,56,74,0.55);
+  color: var(--cream);
+  outline: none;
+  box-shadow: var(--shadow);
+}
+.lock-actions{
+  display: flex;
+  justify-content: flex-end;
+}
+.lock-error{
+  margin: 14px 0 0;
+  min-height: 18px;
+  color: #ffb86b;
+  font-size: 12.5px;
+}
+
 .kpi-sections{
   display:grid;
   gap: 14px;
