@@ -1,28 +1,55 @@
 /* ========= Configuration ========= */
 const BUILT_IN_CSV = "MakitaExport.csv";
-const SITE_PASSWORD = "Toolden2026!";
+const PASSWORD_HASH = "5fd61b92e0579e29ea947db9b9f8ab2850f59ad7eb0f4befbf6161bc02f35de3";
 const PASSWORD_STORAGE_KEY = "tooldenDashboardAccess";
 
-function enforcePassword(){
+async function hashPassword(value){
+  const encoder = new TextEncoder();
+  const data = encoder.encode(value);
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(hashBuffer)]
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function enforcePassword(){
   if (sessionStorage.getItem(PASSWORD_STORAGE_KEY) === "true") return true;
-  const entry = window.prompt("Enter the password to access the Toolden dashboard:");
-  if (entry === SITE_PASSWORD){
-    sessionStorage.setItem(PASSWORD_STORAGE_KEY, "true");
-    return true;
-  }
 
   document.body.innerHTML = `
     <div class="lock-screen">
       <div class="lock-card">
-        <h1>Access restricted</h1>
-        <p>The password you entered is incorrect. Please try again to view this dashboard.</p>
-        <button class="btn" type="button" id="retryAccess">Try again</button>
+        <img class="lock-logo" src="toolden.png" alt="Toolden logo" />
+        <h1>Toolden Dashboard</h1>
+        <form class="lock-form" id="lockForm">
+          <label class="lock-label" for="lockPassword">Password</label>
+          <input id="lockPassword" type="password" autocomplete="current-password" required />
+          <div class="lock-actions">
+            <button class="btn" type="submit">Unlock</button>
+          </div>
+        </form>
+        <p class="lock-error" id="lockError" role="alert" aria-live="polite"></p>
       </div>
     </div>
   `;
-  document.getElementById("retryAccess")?.addEventListener("click", ()=>{
-    window.location.reload();
+
+  const form = document.getElementById("lockForm");
+  const input = document.getElementById("lockPassword");
+  const error = document.getElementById("lockError");
+
+  form?.addEventListener("submit", async (event)=>{
+    event.preventDefault();
+    const entry = input?.value ?? "";
+    const hash = await hashPassword(entry);
+    if (hash === PASSWORD_HASH){
+      sessionStorage.setItem(PASSWORD_STORAGE_KEY, "true");
+      window.location.reload();
+      return;
+    }
+    if (error) error.textContent = "Incorrect password. Please try again.";
+    if (input) input.value = "";
+    input?.focus();
   });
+  input?.focus();
   return false;
 }
 
@@ -945,7 +972,9 @@ function bind(){
 
 /* ========= Boot ========= */
 window.addEventListener("DOMContentLoaded", ()=>{
-  if (!enforcePassword()) return;
-  bind();
-  loadFromPath(BUILT_IN_CSV).catch(err => console.error("Auto load failed:", err));
+  enforcePassword().then((allowed)=>{
+    if (!allowed) return;
+    bind();
+    loadFromPath(BUILT_IN_CSV).catch(err => console.error("Auto load failed:", err));
+  });
 });
