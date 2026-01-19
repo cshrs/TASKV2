@@ -1,5 +1,30 @@
 /* ========= Configuration ========= */
 const BUILT_IN_CSV = "MakitaExport.csv";
+const SITE_PASSWORD = "Toolden2026!";
+const PASSWORD_STORAGE_KEY = "tooldenDashboardAccess";
+
+function enforcePassword(){
+  if (sessionStorage.getItem(PASSWORD_STORAGE_KEY) === "true") return true;
+  const entry = window.prompt("Enter the password to access the Toolden dashboard:");
+  if (entry === SITE_PASSWORD){
+    sessionStorage.setItem(PASSWORD_STORAGE_KEY, "true");
+    return true;
+  }
+
+  document.body.innerHTML = `
+    <div class="lock-screen">
+      <div class="lock-card">
+        <h1>Access restricted</h1>
+        <p>The password you entered is incorrect. Please try again to view this dashboard.</p>
+        <button class="btn" type="button" id="retryAccess">Try again</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("retryAccess")?.addEventListener("click", ()=>{
+    window.location.reload();
+  });
+  return false;
+}
 
 /* ========= Plotly theme ========= */
 const baseLayout = {
@@ -920,6 +945,7 @@ function bind(){
 
 /* ========= Boot ========= */
 window.addEventListener("DOMContentLoaded", ()=>{
+  if (!enforcePassword()) return;
   bind();
   loadFromPath(BUILT_IN_CSV).catch(err => console.error("Auto load failed:", err));
 });

@@ -132,6 +132,32 @@ select:disabled{
 }
 .btn:hover{ background: rgba(255,139,0,0.26); }
 
+.lock-screen{
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.lock-card{
+  max-width: 480px;
+  width: 100%;
+  padding: 28px;
+  border-radius: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.lock-card h1{
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+.lock-card p{
+  margin: 0 0 20px;
+  color: rgba(236,230,213,0.8);
+}
+
 .kpi-sections{
   display:grid;
   gap: 14px;
