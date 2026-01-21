@@ -255,6 +255,9 @@ function hydrate(rawRows){
     const profit = (Number.isFinite(unitsThisYear) && Number.isFinite(sellEx) && Number.isFinite(costEx))
       ? unitsThisYear * (sellEx - costEx)
       : NaN;
+    const profitLastYear = (Number.isFinite(unitsLastYear) && Number.isFinite(sellEx) && Number.isFinite(costEx))
+      ? unitsLastYear * (sellEx - costEx)
+      : NaN;
 
     const discountPct = (Number.isFinite(saleInc) && saleInc > 0 && Number.isFinite(sellInc) && sellInc > 0)
       ? ((sellInc - saleInc) / sellInc) * 100
@@ -282,6 +285,7 @@ function hydrate(rawRows){
       revenueLastYear,
 
       profit,
+      profitLastYear,
       discountPct
     };
   });
@@ -427,13 +431,23 @@ function aggByBrand(items){
   const m = new Map();
   for (const r of items){
     const k = r.brand || "Unknown";
-    if (!m.has(k)) m.set(k, { k, unitsThisYear:0, unitsLastYear:0, revenueYTD:0, profit:0 });
+    if (!m.has(k)) m.set(k, {
+      k,
+      unitsThisYear:0,
+      unitsLastYear:0,
+      revenueYTD:0,
+      revenueLastYear:0,
+      profit:0,
+      profitLastYear:0
+    });
     const o = m.get(k);
 
     o.unitsThisYear += Number.isFinite(r.unitsThisYear) ? r.unitsThisYear : 0;
     o.unitsLastYear += Number.isFinite(r.unitsLastYear) ? r.unitsLastYear : 0;
     o.revenueYTD += Number.isFinite(r.revenueYTD) ? r.revenueYTD : 0;
+    o.revenueLastYear += Number.isFinite(r.revenueLastYear) ? r.revenueLastYear : 0;
     o.profit += Number.isFinite(r.profit) ? r.profit : 0;
+    o.profitLastYear += Number.isFinite(r.profitLastYear) ? r.profitLastYear : 0;
   }
   return [...m.values()].sort((a,b)=> (b.revenueYTD - a.revenueYTD) || (b.profit - a.profit));
 }
@@ -442,6 +456,18 @@ function aggByClassificationUnits(items){
   const m = new Map();
   for (const r of items){
     const k = r.classification || "Unknown";
+    if (!m.has(k)) m.set(k, { k, thisYear:0, lastYear:0 });
+    const o = m.get(k);
+    o.thisYear += Number.isFinite(r.unitsThisYear) ? r.unitsThisYear : 0;
+    o.lastYear += Number.isFinite(r.unitsLastYear) ? r.unitsLastYear : 0;
+  }
+  return [...m.values()].sort((a,b)=> b.thisYear - a.thisYear);
+}
+
+function aggByParentUnits(items){
+  const m = new Map();
+  for (const r of items){
+    const k = r.parent || "Unknown";
     if (!m.has(k)) m.set(k, { k, thisYear:0, lastYear:0 });
     const o = m.get(k);
     o.thisYear += Number.isFinite(r.unitsThisYear) ? r.unitsThisYear : 0;
@@ -459,10 +485,28 @@ function aggByClassificationRevenue(items){
   return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
 }
 
+function aggByClassificationRevenueLastYear(items){
+  const m = new Map();
+  for (const r of items){
+    const k = r.classification || "Unknown";
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueLastYear) ? r.revenueLastYear : 0));
+  }
+  return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
+}
+
 function aggByClassificationStockValue(items){
   const m = new Map();
   for (const r of items){
     const k = r.classification || "Unknown";
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.stockValue) ? r.stockValue : 0));
+  }
+  return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
+}
+
+function aggByParentStockValue(items){
+  const m = new Map();
+  for (const r of items){
+    const k = r.parent || "Unknown";
     m.set(k, (m.get(k) || 0) + (Number.isFinite(r.stockValue) ? r.stockValue : 0));
   }
   return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
@@ -475,6 +519,20 @@ function aggByParentRevenue(items){
     m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueYTD) ? r.revenueYTD : 0));
   }
   return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
+}
+
+function aggByParentRevenueLastYear(items){
+  const m = new Map();
+  for (const r of items){
+    const k = r.parent || "Unknown";
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueLastYear) ? r.revenueLastYear : 0));
+  }
+  return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
+}
+
+function grossProfitPct(profit, revenue){
+  if (!Number.isFinite(profit) || !Number.isFinite(revenue) || revenue === 0) return NaN;
+  return (profit / revenue) * 100;
 }
 
 function topNWithOtherPairs(rows2, n=10){
@@ -497,6 +555,47 @@ function discountBand(p){
 }
 
 /* ========= Charts ========= */
+function drawSimpleBarChart(chartId, title, labels, values, colours, yTitle, formatFn, tickSuffix = ""){
+  const hover = labels.map((label, i) =>
+    `<b>${label}</b><br>${yTitle}: ${formatFn(values[i])}`
+  );
+
+  safePlot(chartId, [{
+    type:"bar",
+    x: labels,
+    y: values,
+    marker:{ color: colours, opacity: 0.86 },
+    hovertext: hover,
+    hoverinfo: "text"
+  }], {
+    title,
+    xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels, gridcolor:"rgba(217,219,223,0.12)" },
+    yaxis:{ title: yTitle, ticksuffix: tickSuffix, gridcolor:"rgba(217,219,223,0.12)" }
+  });
+}
+
+function drawBrandMetric(items, chartId, title, valueFn, yTitle, formatFn, tickSuffix = ""){
+  const rows2 = aggByBrand(items).slice(0,12);
+  const labels = rows2.map(x=>x.k);
+  const values = rows2.map(valueFn);
+  const colours = labels.map((b,i)=> brandColour.get(b) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
+  drawSimpleBarChart(chartId, title, labels, values, colours, yTitle, formatFn, tickSuffix);
+}
+
+function drawClassificationMetric(rows2, chartId, title, valueFn, yTitle, formatFn, tickSuffix = ""){
+  const labels = rows2.map(x=>x.k);
+  const values = rows2.map(valueFn);
+  const colours = labels.map(label => classificationColour.get(label) || "#d9dbdf");
+  drawSimpleBarChart(chartId, title, labels, values, colours, yTitle, formatFn, tickSuffix);
+}
+
+function drawParentMetric(rows2, chartId, title, valueFn, yTitle, formatFn, tickSuffix = ""){
+  const labels = rows2.map(x=>x.k);
+  const values = rows2.map(valueFn);
+  const colours = labels.map((label,i)=> BRAND_PALETTE[i % BRAND_PALETTE.length]);
+  drawSimpleBarChart(chartId, title, labels, values, colours, yTitle, formatFn, tickSuffix);
+}
+
 function drawBrandUnitsThisYearLastYear(items){
   const rows2 = aggByBrand(items).slice(0,12);
   const labels = rows2.map(x=>x.k);
@@ -540,7 +639,7 @@ function drawParentRevenueShare(items){
   }], { title:"Parent Category Revenue Share (YTD)" });
 }
 
-function drawStockValueByClassification(items){
+function drawStockValueByClassification(items, chartId = "stockValueByClassification", title = "Stock Value by Classification"){
   const rows2 = aggByClassificationStockValue(items);
   const byKey = new Map(rows2.map(x => [normaliseKey(x.k), x.v]));
   const ordered = CLASS_ORDER.map(label => ({
@@ -551,17 +650,132 @@ function drawStockValueByClassification(items){
   const combined = [...ordered, ...extras];
   const labels = combined.map(x=>x.k);
 
-  safePlot("stockValueByClassification", [{
+  safePlot(chartId, [{
     type:"bar",
     x: labels,
     y: combined.map(x=>x.v),
     marker:{ color: combined.map(x => classificationColour.get(x.k) || "#d9dbdf"), opacity: 0.92 },
     hovertemplate:"<b>%{x}</b><br>Stock value: £%{y:,.0f}<extra></extra>"
   }], {
-    title:"Stock Value by Classification",
+    title,
     xaxis:{ automargin:true, categoryorder:"array", categoryarray: labels, gridcolor:"rgba(217,219,223,0.12)" },
     yaxis:{ title:"£", gridcolor:"rgba(217,219,223,0.12)" }
   });
+}
+
+function drawStockValueByCategory(items){
+  const rows2 = aggByParentStockValue(items).slice(0,12);
+  drawParentMetric(
+    rows2,
+    "stockValueByCategory",
+    "Stock Value This Year by Category",
+    x => x.v,
+    "Stock value (£)",
+    fmtGBP
+  );
+}
+
+function drawUnitsThisYearByClassification(items){
+  const rows2 = aggByClassificationUnits(items).slice(0,12);
+  drawClassificationMetric(
+    rows2,
+    "unitsThisYearByClassification",
+    "Units Sold This Year by Classification",
+    x => x.thisYear,
+    "Units",
+    fmtInt
+  );
+}
+
+function drawUnitsThisYearByCategory(items){
+  const rows2 = aggByParentUnits(items).slice(0,12);
+  drawParentMetric(
+    rows2,
+    "unitsThisYearByCategory",
+    "Units Sold This Year by Category",
+    x => x.thisYear,
+    "Units",
+    fmtInt
+  );
+}
+
+function drawRevenueLastYearByClassification(items){
+  const rows2 = aggByClassificationRevenueLastYear(items).slice(0,12);
+  drawClassificationMetric(
+    rows2,
+    "revenueLastYearByClassification",
+    "Total Last Year Revenue by Classification",
+    x => x.v,
+    "Revenue (£)",
+    fmtGBP
+  );
+}
+
+function drawRevenueLastYearByCategory(items){
+  const rows2 = aggByParentRevenueLastYear(items).slice(0,12);
+  drawParentMetric(
+    rows2,
+    "revenueLastYearByCategory",
+    "Total Last Year Revenue by Category",
+    x => x.v,
+    "Revenue (£)",
+    fmtGBP
+  );
+}
+
+function drawUnitsLastYearByClassification(items){
+  const rows2 = aggByClassificationUnits(items)
+    .sort((a,b)=> b.lastYear - a.lastYear)
+    .slice(0,12);
+  drawClassificationMetric(
+    rows2,
+    "unitsLastYearByClassification",
+    "Total Last Year Units Sold by Classification",
+    x => x.lastYear,
+    "Units",
+    fmtInt
+  );
+}
+
+function drawUnitsLastYearByCategory(items){
+  const rows2 = aggByParentUnits(items)
+    .sort((a,b)=> b.lastYear - a.lastYear)
+    .slice(0,12);
+  drawParentMetric(
+    rows2,
+    "unitsLastYearByCategory",
+    "Total Last Year Units Sold by Category",
+    x => x.lastYear,
+    "Units",
+    fmtInt
+  );
+}
+
+function drawTopStockValue(items){
+  drawTopSkuMetric(
+    items,
+    "topStockValue",
+    "Top 10 by Stock Value",
+    r => r.stockValue,
+    "Stock value",
+    true,
+    { topN: 10 }
+  );
+}
+
+function drawStockSkuBreakdown(items, classificationLabel, chartId){
+  drawTopSkuMetric(
+    items,
+    chartId,
+    `Stock Classification Breakdown by SKU: ${classificationLabel}`,
+    r => r.stockValue,
+    "Stock value",
+    true,
+    {
+      topN: 10,
+      filterFn: r => normaliseKey(r.classification) === normaliseKey(classificationLabel)
+    }
+  );
 }
 
 function drawDiscountBandsUnits(items){
@@ -617,14 +831,15 @@ function drawClassificationUnitsThisYearLastYear(items){
 }
 
 /* Top SKUs charts: fewer rows so labels are readable */
-function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney){
-  const TOP_N = 18;
+function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney, options = {}){
+  const { topN = 18, filterFn } = options;
 
-  const top = items
+  const source = filterFn ? items.filter(filterFn) : items;
+  const top = source
     .map(r => ({ r, v: valueFn(r) }))
     .filter(x => Number.isFinite(x.v) && x.v > 0)
     .sort((a,b)=> b.v - a.v)
-    .slice(0, TOP_N)
+    .slice(0, topN)
     .map(x => ({ ...x.r, v: x.v }));
 
   const y = top.map(r => r.sku || "(no sku)");
@@ -664,16 +879,19 @@ function renderKpis(items){
   const revenueLastYear = sum(items.map(r=>r.revenueLastYear));
 
   const profit = sum(items.map(r=>r.profit));
+  const profitLastYear = sum(items.map(r=>r.profitLastYear));
   const stockValue = sum(items.map(r=>r.stockValue));
 
-  document.getElementById("kpiUnitsThisYear").textContent = fmtInt(unitsThisYear);
-  document.getElementById("kpiUnitsLastYear").textContent = fmtInt(unitsLastYear);
-
-  document.getElementById("kpiRevenueYTD").textContent = fmtGBP(revenueYTD);
-  document.getElementById("kpiRevenueLastYear").textContent = fmtGBP(revenueLastYear);
-
-  document.getElementById("kpiProfit").textContent = fmtGBP(profit);
   document.getElementById("kpiStockValue").textContent = fmtGBP(stockValue);
+  document.getElementById("kpiRevenueThisYear").textContent = fmtGBP(revenueYTD);
+  document.getElementById("kpiProfitThisYear").textContent = fmtGBP(profit);
+  document.getElementById("kpiGrossProfitPctThisYear").textContent = fmtPct(grossProfitPct(profit, revenueYTD));
+  document.getElementById("kpiUnitsThisYear").textContent = fmtInt(unitsThisYear);
+
+  document.getElementById("kpiRevenueLastYear").textContent = fmtGBP(revenueLastYear);
+  document.getElementById("kpiProfitLastYear").textContent = fmtGBP(profitLastYear);
+  document.getElementById("kpiGrossProfitPctLastYear").textContent = fmtPct(grossProfitPct(profitLastYear, revenueLastYear));
+  document.getElementById("kpiUnitsLastYear").textContent = fmtInt(unitsLastYear);
 
   const classTotals = new Map(
     CLASS_ORDER.map(label => [normaliseKey(label), { label, value: 0 }])
@@ -831,17 +1049,58 @@ function refresh(){
 
   renderKpis(items);
 
-  drawBrandUnitsThisYearLastYear(items);
-  drawBrandRevProfit(items);
-  drawParentRevenueShare(items);
   drawStockValueByClassification(items);
-  drawDiscountBandsUnits(items);
-  drawClassificationShare(items);
-  drawClassificationUnitsThisYearLastYear(items);
+  drawStockValueByClassification(items, "stockValueByClassification360", "Stock Value This Year by Classification");
+  drawTopStockValue(items);
+  drawStockSkuBreakdown(items, "A+", "stockSkuAPlus");
+  drawStockSkuBreakdown(items, "A", "stockSkuA");
+  drawStockSkuBreakdown(items, "B", "stockSkuB");
+  drawStockSkuBreakdown(items, "C", "stockSkuC");
+  drawStockSkuBreakdown(items, "D", "stockSkuD");
+  drawStockSkuBreakdown(items, "E", "stockSkuE");
+  drawStockSkuBreakdown(items, "F", "stockSkuF");
 
-  drawTopSkuMetric(items, "topSkuProfit", "Top SKUs by Profit This Year", r => r.profit, "Profit", true);
-  drawTopSkuMetric(items, "topSkuRevenue", "Top SKUs by Revenue YTD", r => r.revenueYTD, "Revenue YTD", true);
-  drawTopSkuMetric(items, "topSkuUnits", "Top SKUs by Units Sold This Year", r => r.unitsThisYear, "Units sold this year", false);
+  drawBrandMetric(items, "brandRevenueThisYear", "Revenue This Year by Brand (Top 12)", r => r.revenueYTD, "Revenue (£)", fmtGBP);
+  drawBrandMetric(items, "brandProfitThisYear", "Profit This Year by Brand (Top 12)", r => r.profit, "Profit (£)", fmtGBP);
+  drawBrandMetric(
+    items,
+    "brandGrossProfitPctThisYear",
+    "Gross Profit % This Year by Brand (Top 12)",
+    r => grossProfitPct(r.profit, r.revenueYTD),
+    "Gross Profit %",
+    fmtPct,
+    "%"
+  );
+  drawBrandMetric(items, "brandUnitsThisYear", "Units Sold This Year by Brand (Top 12)", r => r.unitsThisYear, "Units", fmtInt);
+
+  drawBrandMetric(items, "brandRevenueLastYear", "Revenue Last Year by Brand (Top 12)", r => r.revenueLastYear, "Revenue (£)", fmtGBP);
+  drawBrandMetric(items, "brandProfitLastYear", "Profit Last Year by Brand (Top 12)", r => r.profitLastYear, "Profit (£)", fmtGBP);
+  drawBrandMetric(
+    items,
+    "brandGrossProfitPctLastYear",
+    "Gross Profit % Last Year by Brand (Top 12)",
+    r => grossProfitPct(r.profitLastYear, r.revenueLastYear),
+    "Gross Profit %",
+    fmtPct,
+    "%"
+  );
+  drawBrandMetric(items, "brandUnitsLastYear", "Units Sold Last Year by Brand (Top 12)", r => r.unitsLastYear, "Units", fmtInt);
+
+  drawStockValueByCategory(items);
+  drawUnitsThisYearByClassification(items);
+  drawUnitsThisYearByCategory(items);
+  drawRevenueLastYearByClassification(items);
+  drawRevenueLastYearByCategory(items);
+  drawUnitsLastYearByClassification(items);
+  drawUnitsLastYearByCategory(items);
+
+  drawTopSkuMetric(items, "topSkuRevenueThisYear", "Top SKUs by Revenue This Year", r => r.revenueYTD, "Revenue This Year", true);
+  drawTopSkuMetric(items, "topSkuProfitThisYear", "Top SKUs by Profit This Year", r => r.profit, "Profit This Year", true);
+  drawTopSkuMetric(items, "topSkuUnitsThisYear", "Top SKUs by Units This Year", r => r.unitsThisYear, "Units sold this year", false);
+
+  drawTopSkuMetric(items, "topSkuRevenueLastYear", "Total Last Year Top SKUs by Revenue", r => r.revenueLastYear, "Revenue Last Year", true);
+  drawTopSkuMetric(items, "topSkuProfitLastYear", "Total Last Year Top SKUs by Profit", r => r.profitLastYear, "Profit Last Year", true);
+  drawTopSkuMetric(items, "topSkuUnitsLastYear", "Total Last Year Top SKUs by Units", r => r.unitsLastYear, "Units sold last year", false);
 
   renderTable(items);
 }
