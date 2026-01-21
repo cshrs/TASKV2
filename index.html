@@ -44,12 +44,18 @@
   <main class="wrap">
     <section class="kpi-sections">
       <div class="kpi-section">
-        <div class="kpi-section-title">Overview</div>
+        <div class="kpi-section-title">Stock Overview</div>
         <div class="kpi-grid">
           <div class="kpi">
             <div class="kpi-top">
-              <div class="kpi-value" id="kpiProducts">-</div>
-              <div class="kpi-label">Products</div>
+              <div>
+                <div class="kpi-value" id="kpiProducts">-</div>
+                <div class="kpi-label">Products</div>
+              </div>
+              <div>
+                <div class="kpi-value" id="kpiStockValue">-</div>
+                <div class="kpi-label">Total Stock Value</div>
+              </div>
             </div>
             <div class="kpi-subtitle">Stock Value by Classification (A+ to F)</div>
             <div class="kpi-sub" id="kpiClassificationSummary"></div>
@@ -58,87 +64,190 @@
       </div>
 
       <div class="kpi-section">
-        <div class="kpi-section-title">This Year</div>
-        <div class="kpi-grid">
-          <div class="kpi"><div class="kpi-value" id="kpiUnitsThisYear">-</div><div class="kpi-label">Units Sold (This Year)</div></div>
-          <div class="kpi"><div class="kpi-value" id="kpiRevenueYTD">-</div><div class="kpi-label">Revenue (Year to Date)</div></div>
-          <div class="kpi"><div class="kpi-value" id="kpiProfit">-</div><div class="kpi-label">Profit (This Year)</div></div>
-          <div class="kpi"><div class="kpi-value" id="kpiStockValue">-</div><div class="kpi-label">Stock Value (On Hand)</div></div>
+        <div class="kpi-section-title">Performance</div>
+        <div class="kpi-grid kpi-grid-2">
+          <div class="kpi">
+            <div class="kpi-block-title">This Year</div>
+            <div class="kpi-metrics">
+              <div class="kpi-metric"><span>Revenue</span><strong id="kpiRevenueThisYear">-</strong></div>
+              <div class="kpi-metric"><span>Profit</span><strong id="kpiProfitThisYear">-</strong></div>
+              <div class="kpi-metric"><span>Gross Profit %</span><strong id="kpiGrossProfitPctThisYear">-</strong></div>
+              <div class="kpi-metric"><span>Units Sold</span><strong id="kpiUnitsThisYear">-</strong></div>
+            </div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-block-title">Last Year</div>
+            <div class="kpi-metrics">
+              <div class="kpi-metric"><span>Revenue</span><strong id="kpiRevenueLastYear">-</strong></div>
+              <div class="kpi-metric"><span>Profit</span><strong id="kpiProfitLastYear">-</strong></div>
+              <div class="kpi-metric"><span>Gross Profit %</span><strong id="kpiGrossProfitPctLastYear">-</strong></div>
+              <div class="kpi-metric"><span>Units Sold</span><strong id="kpiUnitsLastYear">-</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <h2 class="section-title">Stock Overview</h2>
+      <div class="grid">
+        <div class="card">
+          <h2>Stock Value by Classification (A+ to F)</h2>
+          <p class="subtle">Uses the Stock Value column from the export.</p>
+          <div class="chart" id="stockValueByClassification"></div>
+        </div>
+
+        <div class="card">
+          <h2>Top 10 by Stock Value</h2>
+          <p class="subtle">Highest stock value SKUs on hand.</p>
+          <div class="chart" id="topStockValue"></div>
         </div>
       </div>
 
-      <div class="kpi-section">
-        <div class="kpi-section-title">Last Year</div>
-        <div class="kpi-grid">
-          <div class="kpi"><div class="kpi-value" id="kpiUnitsLastYear">-</div><div class="kpi-label">Units Sold (Last Year)</div></div>
-          <div class="kpi"><div class="kpi-value" id="kpiRevenueLastYear">-</div><div class="kpi-label">Revenue (Last Year)</div></div>
+      <div class="grid">
+        <div class="card">
+          <h2>Stock Classification Breakdown by SKU: A+</h2>
+          <p class="subtle">Top 10 SKUs by stock value.</p>
+          <div class="chart chart-compact" id="stockSkuAPlus"></div>
+        </div>
+
+        <div class="card">
+          <h2>Stock Classification Breakdown by SKU: A</h2>
+          <p class="subtle">Top 10 SKUs by stock value.</p>
+          <div class="chart chart-compact" id="stockSkuA"></div>
+        </div>
+
+        <div class="card">
+          <h2>Stock Classification Breakdown by SKU: B</h2>
+          <p class="subtle">Top 10 SKUs by stock value.</p>
+          <div class="chart chart-compact" id="stockSkuB"></div>
+        </div>
+
+        <div class="card">
+          <h2>Stock Classification Breakdown by SKU: C</h2>
+          <p class="subtle">Top 10 SKUs by stock value.</p>
+          <div class="chart chart-compact" id="stockSkuC"></div>
+        </div>
+
+        <div class="card">
+          <h2>Stock Classification Breakdown by SKU: D</h2>
+          <p class="subtle">Top 10 SKUs by stock value.</p>
+          <div class="chart chart-compact" id="stockSkuD"></div>
+        </div>
+
+        <div class="card">
+          <h2>Stock Classification Breakdown by SKU: E</h2>
+          <p class="subtle">Top 10 SKUs by stock value.</p>
+          <div class="chart chart-compact" id="stockSkuE"></div>
+        </div>
+
+        <div class="card">
+          <h2>Stock Classification Breakdown by SKU: F</h2>
+          <p class="subtle">Top 10 SKUs by stock value.</p>
+          <div class="chart chart-compact" id="stockSkuF"></div>
         </div>
       </div>
     </section>
 
-    <section class="grid">
-      <div class="card">
-        <h2>Units Sold This Year vs Last Year by Brand (Top 12)</h2>
-        <div class="chart" id="brandUnitsThisYearLastYear"></div>
+    <section class="section-block">
+      <h2 class="section-title">360 View</h2>
+      <div class="section-subtitle">Stock Breakdown</div>
+      <div class="grid">
+        <div class="card">
+          <h2>Stock Value This Year by Classification</h2>
+          <div class="chart" id="stockValueByClassification360"></div>
+        </div>
+
+        <div class="card">
+          <h2>Stock Value This Year by Category</h2>
+          <div class="chart" id="stockValueByCategory"></div>
+        </div>
       </div>
 
-      <div class="card">
-        <h2>Revenue YTD and Profit This Year by Brand (Top 12)</h2>
-        <p class="subtle">Revenue uses Calculated Revenue YTD from the export. Profit uses (Selling Price ex VAT − Cost Price ex VAT) × Units sold this year.</p>
-        <div class="chart" id="brandRevProfit"></div>
-      </div>
-    </section>
+      <div class="section-subtitle">Performance</div>
+      <div class="grid">
+        <div class="card">
+          <h2>Units Sold This Year by Classification</h2>
+          <div class="chart" id="unitsThisYearByClassification"></div>
+        </div>
 
-    <section class="grid">
-      <div class="card">
-        <h2>Parent Category Revenue Share (YTD)</h2>
-        <div class="chart" id="parentRevenueShare"></div>
-      </div>
-
-      <div class="card">
-        <h2>Stock Value by Classification</h2>
-        <p class="subtle">Uses the Stock Value column from the export.</p>
-        <div class="chart" id="stockValueByClassification"></div>
-      </div>
-    </section>
-
-    <section class="grid">
-      <div class="card">
-        <h2>Discount Bands vs Units Sold This Year</h2>
-        <p class="subtle">Discount uses Selling Price inc VAT vs Sale Price inc VAT (when both exist).</p>
-        <div class="chart" id="discountBandsUnits"></div>
+        <div class="card">
+          <h2>Total Last Year Units Sold by Classification</h2>
+          <div class="chart" id="unitsLastYearByClassification"></div>
+        </div>
       </div>
 
-      <div class="card">
-        <h2>Classification Share (Revenue YTD)</h2>
-        <div class="chart" id="classificationShare"></div>
-      </div>
-    </section>
+      <div class="grid">
+        <div class="card">
+          <h2>This Year Revenue by Classification</h2>
+          <div class="chart" id="revenueThisYearByClassification"></div>
+        </div>
 
-    <section class="grid">
-      <div class="card">
-        <h2>Units Sold This Year vs Last Year by Classification (Top 12)</h2>
-        <div class="chart" id="classificationUnitsThisYearLastYear"></div>
-      </div>
-
-      <div class="card">
-        <h2>Top SKUs by Profit This Year</h2>
-        <p class="subtle">Fewer SKUs shown so labels are readable. Hover shows full name and value.</p>
-        <div class="chart" id="topSkuProfit"></div>
-      </div>
-    </section>
-
-    <section class="grid">
-      <div class="card">
-        <h2>Top SKUs by Revenue YTD</h2>
-        <p class="subtle">Uses Calculated Revenue YTD from export. Hover shows full name and value.</p>
-        <div class="chart" id="topSkuRevenue"></div>
+        <div class="card">
+          <h2>Total Last Year Revenue by Classification</h2>
+          <div class="chart" id="revenueLastYearByClassification"></div>
+        </div>
       </div>
 
-      <div class="card">
-        <h2>Top SKUs by Units Sold This Year</h2>
-        <p class="subtle">Hover shows full name and value.</p>
-        <div class="chart" id="topSkuUnits"></div>
+      <div class="grid">
+        <div class="card">
+          <h2>This Year Revenue by Category</h2>
+          <div class="chart" id="revenueThisYearByCategory"></div>
+        </div>
+
+        <div class="card">
+          <h2>Total Last Year Revenue by Category</h2>
+          <div class="chart" id="revenueLastYearByCategory"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Units Sold This Year by Category</h2>
+          <div class="chart" id="unitsThisYearByCategory"></div>
+        </div>
+
+        <div class="card">
+          <h2>Total Last Year Units Sold by Category</h2>
+          <div class="chart" id="unitsLastYearByCategory"></div>
+        </div>
+      </div>
+
+      <div class="section-subtitle">SKU Performance</div>
+      <div class="grid">
+        <div class="card">
+          <h2>Top SKUs by Revenue This Year</h2>
+          <div class="chart" id="topSkuRevenueThisYear"></div>
+        </div>
+
+        <div class="card">
+          <h2>Total Last Year Top SKUs by Revenue</h2>
+          <div class="chart" id="topSkuRevenueLastYear"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Top SKUs by Profit This Year</h2>
+          <div class="chart" id="topSkuProfitThisYear"></div>
+        </div>
+
+        <div class="card">
+          <h2>Total Last Year Top SKUs by Profit</h2>
+          <div class="chart" id="topSkuProfitLastYear"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Top SKUs by Units This Year</h2>
+          <div class="chart" id="topSkuUnitsThisYear"></div>
+        </div>
+
+        <div class="card">
+          <h2>Total Last Year Top SKUs by Units</h2>
+          <div class="chart" id="topSkuUnitsLastYear"></div>
+        </div>
       </div>
     </section>
 
