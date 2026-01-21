@@ -773,7 +773,8 @@ function drawStockSkuBreakdown(items, classificationLabel, chartId){
     true,
     {
       topN: 10,
-      filterFn: r => normaliseKey(r.classification) === normaliseKey(classificationLabel)
+      filterFn: r => normaliseKey(r.classification) === normaliseKey(classificationLabel),
+      colourFn: () => classificationColour.get(classificationLabel) || CLASSIFICATION_COLOURS[classificationLabel] || "#d9dbdf"
     }
   );
 }
@@ -832,7 +833,7 @@ function drawClassificationUnitsThisYearLastYear(items){
 
 /* Top SKUs charts: fewer rows so labels are readable */
 function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney, options = {}){
-  const { topN = 18, filterFn } = options;
+  const { topN = 18, filterFn, colourFn } = options;
 
   const source = filterFn ? items.filter(filterFn) : items;
   const top = source
@@ -844,7 +845,10 @@ function drawTopSkuMetric(items, chartId, title, valueFn, valueLabel, isMoney, o
 
   const y = top.map(r => r.sku || "(no sku)");
   const x = top.map(r => r.v);
-  const colours = top.map((r,i)=> brandColour.get(r.brand) || BRAND_PALETTE[i % BRAND_PALETTE.length]);
+  const colours = top.map((r,i)=> {
+    if (colourFn) return colourFn(r, i);
+    return brandColour.get(r.brand) || BRAND_PALETTE[i % BRAND_PALETTE.length];
+  });
 
   const hover = top.map(r =>
     `<b>${r.sku}</b><br>${r.name}` +
@@ -1059,32 +1063,6 @@ function refresh(){
   drawStockSkuBreakdown(items, "D", "stockSkuD");
   drawStockSkuBreakdown(items, "E", "stockSkuE");
   drawStockSkuBreakdown(items, "F", "stockSkuF");
-
-  drawBrandMetric(items, "brandRevenueThisYear", "Revenue This Year by Brand (Top 12)", r => r.revenueYTD, "Revenue (£)", fmtGBP);
-  drawBrandMetric(items, "brandProfitThisYear", "Profit This Year by Brand (Top 12)", r => r.profit, "Profit (£)", fmtGBP);
-  drawBrandMetric(
-    items,
-    "brandGrossProfitPctThisYear",
-    "Gross Profit % This Year by Brand (Top 12)",
-    r => grossProfitPct(r.profit, r.revenueYTD),
-    "Gross Profit %",
-    fmtPct,
-    "%"
-  );
-  drawBrandMetric(items, "brandUnitsThisYear", "Units Sold This Year by Brand (Top 12)", r => r.unitsThisYear, "Units", fmtInt);
-
-  drawBrandMetric(items, "brandRevenueLastYear", "Revenue Last Year by Brand (Top 12)", r => r.revenueLastYear, "Revenue (£)", fmtGBP);
-  drawBrandMetric(items, "brandProfitLastYear", "Profit Last Year by Brand (Top 12)", r => r.profitLastYear, "Profit (£)", fmtGBP);
-  drawBrandMetric(
-    items,
-    "brandGrossProfitPctLastYear",
-    "Gross Profit % Last Year by Brand (Top 12)",
-    r => grossProfitPct(r.profitLastYear, r.revenueLastYear),
-    "Gross Profit %",
-    fmtPct,
-    "%"
-  );
-  drawBrandMetric(items, "brandUnitsLastYear", "Units Sold Last Year by Brand (Top 12)", r => r.unitsLastYear, "Units", fmtInt);
 
   drawStockValueByCategory(items);
   drawUnitsThisYearByClassification(items);
