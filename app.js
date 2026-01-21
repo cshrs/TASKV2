@@ -535,6 +535,34 @@ function grossProfitPct(profit, revenue){
   return (profit / revenue) * 100;
 }
 
+function aggByParentRevenueLastYear(items){
+  const m = new Map();
+  for (const r of items){
+    const k = r.parent || "Unknown";
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueLastYear) ? r.revenueLastYear : 0));
+  }
+  return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
+}
+
+function grossProfitPct(profit, revenue){
+  if (!Number.isFinite(profit) || !Number.isFinite(revenue) || revenue === 0) return NaN;
+  return (profit / revenue) * 100;
+}
+
+function aggByParentRevenueLastYear(items){
+  const m = new Map();
+  for (const r of items){
+    const k = r.parent || "Unknown";
+    m.set(k, (m.get(k) || 0) + (Number.isFinite(r.revenueLastYear) ? r.revenueLastYear : 0));
+  }
+  return [...m.entries()].map(([k,v])=>({k,v})).sort((a,b)=> b.v - a.v);
+}
+
+function grossProfitPct(profit, revenue){
+  if (!Number.isFinite(profit) || !Number.isFinite(revenue) || revenue === 0) return NaN;
+  return (profit / revenue) * 100;
+}
+
 function topNWithOtherPairs(rows2, n=10){
   if (rows2.length <= n) return rows2;
   const top = rows2.slice(0,n);
